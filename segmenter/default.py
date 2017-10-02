@@ -17,7 +17,7 @@ class Pdist(dict):
     "A probability distribution estimated from counts in datafile."
 
     def __init__(self, filename, sep='\t', N=None, missingfn=None):
-        self.maxlen = 0 
+        self.maxlen = 0
         for line in file(filename):
             (key, freq) = line.split(sep)
             try:
@@ -44,7 +44,7 @@ sys.stdout = codecs.lookup('utf-8')[-1](sys.stdout)
 with open(opts.input) as f:
 
     # data = list()
-    Entry = namedtuple('Entry', 'word start logp back')
+    Entry = namedtuple('Entry', 'start word logp back')
     PHeap = []
     chart = dict()
 
@@ -53,7 +53,7 @@ with open(opts.input) as f:
         print utf8line
 
         # Step 1:
-        # Initializing step 
+        # Initializing step
         # Finding each word that matches input at position 0
         for key in Pw:
             if utf8line.find(key, 0) != -1 :
@@ -64,7 +64,7 @@ with open(opts.input) as f:
             head = heappop(PHeap)
             print len(PHeap)
 
-            endindex = head.start + len(head.word) - 1
+            endindex = head.start + len(head.word)
 
             if endindex in chart:
                 preventry = chart[endindex]
@@ -75,8 +75,8 @@ with open(opts.input) as f:
                 chart[endindex] = head
 
             for key in Pw:
-                if utf8line.find(key, endindex+1) != -1 :
-                    heappush(PHeap, Entry(word=key, start=endindex+1, logp=Pw(key), back=head))
+                if utf8line.find(key, endindex) != -1 :
+                    heappush(PHeap, Entry(word=key, start=endindex, logp=Pw(key), back=head))
 
 
     finalindex = len(utf8line)

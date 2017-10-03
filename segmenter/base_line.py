@@ -200,9 +200,9 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
             # Check wether the pattern exist in our learn data or no
             # If it doesn't exist we move for one character and push that character to the heap
             if num_observ == 0:
-                entry = chartEntry("".join(utf8line[0]).encode('utf-8'), start_pos=0, end_pos=0, \
+                heap.push(chartEntry("".join(utf8line[0]).encode('utf-8'), start_pos=0, end_pos=0, \
                            log_prob=np.log2(1/float(Pw.Size())), back_ptr=None, \
-                           sort_acc_to=sort_acc_to)
+                           sort_acc_to=sort_acc_to))
 
             # Step 2:
             while heap:
@@ -235,6 +235,7 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                                log_prob=np.log2(1/float(Pw.Size())), back_ptr=head, \
                                sort_acc_to=sort_acc_to))
 
+
             finalindex = len(utf8line)-1
             if finalindex in chart:
                 finalentry = chart[finalindex]
@@ -251,6 +252,7 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                 print('Result  : ', result,'\n')
 
             else:
+                print(chart)
                 print('Not Found!')
 
 

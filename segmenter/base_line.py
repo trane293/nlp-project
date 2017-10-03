@@ -1,10 +1,9 @@
 from __future__ import print_function
 import sys, codecs, optparse, os
-# import pandas as pd
-# from pandas.io.parsers import read_csv
 import heapq as heapq
 import numpy as np
 import pdb
+# pdb.set_trace()
 
 optparser = optparse.OptionParser()
 optparser.add_option("-c", "--unigramcounts", dest='counts1w', default=os.path.join('data', 'count_1w.txt'), help="unigram counts")
@@ -165,14 +164,17 @@ class Pdist(dict):
         else:
             return None
 
+    def Size(self):
+        return len(self)
+
+
 
 Pw = Pdist('data/count_1w.txt')
+
 
 """
 Baseline function implementation
 """
-
-
 def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
     with open(input_filename) as f:
 
@@ -182,20 +184,25 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
             chart = dict()
             heap = Heap()
             utf8line = unicode(line.strip(), 'utf-8')
-            # print(utf8line)
-            # print(len(utf8line))
 
             # Step 1:
             # Initializing step
             # Finding each word that matches input at position 0
+            num_observ = 0
             for key in Pw:
-                # if utf8line.find(key, 0) != -1:
                 if utf8line.startswith(key):
-                    entry = chartEntry("".join(key).encode('utf-8'), start_pos=0, end_pos=len(key), \
+                    entry = chartEntry("".join(key).encode('utf-8'), start_pos=0, end_pos=len(key)-1, \
                                log_prob=np.log2(Pw("".join(key))), back_ptr=None, \
                                sort_acc_to=sort_acc_to)
-                    # print(entry, '\n')
                     heap.push(entry)
+                    num_observ += 1
+
+            # Check wether the pattern exist in our learn data or no
+            # If it doesn't exist we move for one character and push that character to the heap
+            if num_observ == 0:
+                entry = chartEntry("".join(utf8line[0]).encode('utf-8'), start_pos=0, end_pos=0, \
+                           log_prob=np.log2(1/float(Pw.Size())), back_ptr=None, \
+                           sort_acc_to=sort_acc_to)
 
             # Step 2:
             while heap:
@@ -211,20 +218,26 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                 else:
                     chart[endindex] = head
 
+                num_observ = 0
+                sub_utf8line = utf8line[endindex+1:]
+
                 for key in Pw:
-                    sub_utf8line = utf8line[endindex+1:]
                     if sub_utf8line.startswith(key):
+                        num_observ += 1
                         heap.push(chartEntry("".join(key).encode('utf-8'), start_pos=endindex+1, end_pos=endindex+len(key), \
                                    log_prob=np.log2(Pw("".join(key))), back_ptr=head, \
                                    sort_acc_to=sort_acc_to))
 
-            # print('Original: ', utf8line , '(len: ', len(utf8line),')')
-            # print(len(chart))
-            # print(chart)
+                # Check wether the pattern exist in our learn data or no
+                # If it doesn't exist we move for one character and push that character to the heap
+                if num_observ == 0 and len(sub_utf8line) > 0:
+                    heap.push(chartEntry("".join(sub_utf8line[0]).encode('utf-8'), start_pos=endindex+1, end_pos=endindex+1, \
+                               log_prob=np.log2(1/float(Pw.Size())), back_ptr=head, \
+                               sort_acc_to=sort_acc_to))
+
             finalindex = len(utf8line)-1
             if finalindex in chart:
                 finalentry = chart[finalindex]
-                # print(finalentry)
 
                 # Step 3:
                 # Backtracking and printing the output
@@ -240,4 +253,12 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
             else:
                 print('Not Found!')
 
+
+
+
+"""
+Running the algorithem
+    1) First fill the PW using count_1w file
+    2) Run the baseline algorithem
+"""
 baseline_alg(input_filename=opts.input)

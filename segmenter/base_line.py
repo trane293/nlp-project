@@ -1,10 +1,16 @@
 from __future__ import print_function
+import sys, codecs, optparse, os
 # import pandas as pd
 # from pandas.io.parsers import read_csv
 import heapq as heapq
 import numpy as np
 import pdb
 
+optparser = optparse.OptionParser()
+optparser.add_option("-c", "--unigramcounts", dest='counts1w', default=os.path.join('data', 'count_1w.txt'), help="unigram counts")
+optparser.add_option("-b", "--bigramcounts", dest='counts2w', default=os.path.join('data', 'count_2w.txt'), help="bigram counts")
+optparser.add_option("-i", "--inputfile", dest="input", default=os.path.join('data', 'input'), help="input file to segment")
+(opts, _) = optparser.parse_args()
 
 class chartEntry:
     """
@@ -170,10 +176,11 @@ Baseline function implementation
 def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
     with open(input_filename) as f:
 
-        heap = Heap()
-        chart = dict()
-
         for line in f:
+
+
+            chart = dict()
+            heap = Heap()
             utf8line = unicode(line.strip(), 'utf-8')
             # print(utf8line)
             # print(len(utf8line))
@@ -231,10 +238,6 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                 print('Result  : ', result,'\n')
 
             else:
-                print('Original: ',utf8line)
                 print('Not Found!')
-    # output = [i for i in utf8line]  # segmentation is one word per character in the input
-    # print " ".join(output)
 
-
-baseline_alg()
+baseline_alg(input_filename=opts.input)

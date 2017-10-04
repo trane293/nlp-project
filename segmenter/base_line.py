@@ -283,10 +283,16 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                 
                 # move to the next element in the line
                 sub_utf8line = utf8line[endindex+1:]
+<<<<<<< Updated upstream
                 
                 # debug prints
                 # print(sub_utf8line)
                 #  print(len(heap))
+=======
+
+                # print(sub_utf8line)
+                # print(len(heap))
+>>>>>>> Stashed changes
                 for key in Pw:
                     if sub_utf8line.startswith(key):
                         num_observ += 1

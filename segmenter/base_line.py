@@ -264,7 +264,7 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                     newentry = chartEntry("".join(sub_utf8line[0]).encode('utf-8'),
                         start_pos=endindex+1,
                         end_pos=endindex+1,
-                        log_prob=np.log2(smoothed_prob),
+                        log_prob=np.log2(smoothed_prob) + head.get_item('log_prob'),
                         back_ptr=head,
                         sort_acc_to=sort_acc_to)
 

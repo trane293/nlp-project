@@ -11,25 +11,6 @@ optparser.add_option("-b", "--bigramcounts", dest='counts2w', default=os.path.jo
 optparser.add_option("-i", "--inputfile", dest="input", default=os.path.join('data', 'input'), help="input file to segment")
 (opts, _) = optparser.parse_args()
 
-from __future__ import print_function
-import sys, codecs, optparse, os
-import heapq as heapq
-import numpy as np
-import pdb
-# pdb.set_trace()
-
-# optparser = optparse.OptionParser()
-# optparser.add_option("-c", "--unigramcounts", dest='counts1w', default=os.path.join('data', 'count_1w.txt'), help="unigram counts")
-# optparser.add_option("-b", "--bigramcounts", dest='counts2w', default=os.path.join('data', 'count_2w.txt'), help="bigram counts")
-# optparser.add_option("-i", "--inputfile", dest="input", default=os.path.join('data', 'input'), help="input file to segment")
-# (opts, _) = optparser.parse_args()
-
-from __future__ import print_function
-import pandas as pd
-from pandas.io.parsers import read_csv
-import heapq as heapq
-import numpy as np
-
 class chartEntry:
     """
     This class implements the data structure "Entry" described in the baseline
@@ -283,16 +264,16 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                 
                 # move to the next element in the line
                 sub_utf8line = utf8line[endindex+1:]
-                
-                # debug prints
-                # print(sub_utf8line)
-                #  print(len(heap))
+
                 for key in Pw:
                     if sub_utf8line.startswith(key):
                         num_observ += 1
-                        heap.push(chartEntry("".join(key).encode('utf-8'), start_pos=endindex+1, end_pos=endindex+len(key), \
-                                   log_prob=np.log2(Pw("".join(key))), back_ptr=head, \
-                                   sort_acc_to=sort_acc_to))
+                        heap.push(chartEntry("".join(key).encode('utf-8'),
+                            start_pos=endindex+1,
+                            end_pos=endindex+len(key),
+                            log_prob=np.log2(Pw("".join(key))) + head.get_item('log_prob'),
+                            back_ptr=head,
+                            sort_acc_to=sort_acc_to))
 
                 """
                 Check wether the pattern exist in our learn data or no

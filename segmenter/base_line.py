@@ -162,11 +162,7 @@ class Pdist(dict):
     def Size(self):
         return len(self)
 
-
-
-Pw = Pdist('data/count_1w.txt')
-
-def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
+def baseline_alg(input_filename='data/input', sort_acc_to='log_prob', Pw):
     """
     Function implementing the given dynamic programming algorithm for chinese word segmentation. 
     
@@ -205,6 +201,8 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
     """
     
     out_file = open('./outfile', 'wb')
+    smoothed_prob = 1/float(Pw.Size())
+    
     with open(input_filename) as f:
         
         # iterate over all the lines in the input file
@@ -236,7 +234,7 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
             If it doesn't exist we move forward one character and push the unseen character to the heap
             with a smoothed probability 1/N (where N = number of elements in the distribution)
             """
-            smoothed_prob = 1/float(Pw.Size())
+            
             
             if num_observ == 0:
                 heap.push(chartEntry("".join(utf8line[0]).encode('utf-8'), start_pos=0, end_pos=0, \
@@ -281,7 +279,7 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                 """
                 if num_observ == 0 and len(sub_utf8line) > 0 and len(heap) == 0:
                     heap.push(chartEntry("".join(sub_utf8line[0]).encode('utf-8'), start_pos=endindex+1, end_pos=endindex+1, \
-                               log_prob=np.log2(1/float(Pw.Size())), back_ptr=head, \
+                               log_prob=np.log2(smoothed_prob), back_ptr=head, \
                                sort_acc_to=sort_acc_to))
 
             finalindex = len(utf8line)-1
@@ -315,4 +313,5 @@ Running the algorithem
     1) First fill the PW using count_1w file
     2) Run the baseline algorithem
 """
-baseline_alg(input_filename=opts.input)
+Pw = Pdist('data/count_1w.txt')
+baseline_alg(input_filename=opts.input, Pw=Pw)

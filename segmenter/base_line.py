@@ -133,6 +133,12 @@ class Heap:
     def __repr__(self):
         return "{}".format(self.__heap)
 
+    def contains(self, otherEntry):
+        for entry in self.__heap:
+            if entry.isEqual(otherEntry):
+                return True
+        return False
+
 
 class Pdist(dict):
     "A probability distribution estimated from counts in datafile."
@@ -162,43 +168,10 @@ class Pdist(dict):
     def Size(self):
         return len(self)
 
-def baseline_alg(input_filename='data/input', sort_acc_to='log_prob', Pw):
-    """
-    Function implementing the given dynamic programming algorithm for chinese word segmentation. 
-    
-    The algorithm is as follows: 
-        ## Initialize the heap ##
 
-        for each word that matches input at position 0
-        insert Entry(word, 0, logPwlog⁡Pw(word), ∅∅) into heap
-        ## Iteratively fill in chart[i] for all i ##
+Pw = Pdist('data/count_1w.txt')
 
-        while heap is nonempty:
-        entry = top entry in the heap
-        get the endindex based on the length of the word in entry
-        if chart[endindex] has a previous entry, preventry
-        if entry has a higher probability than preventry:
-        chart[endindex] = entry
-        if entry has a lower or equal probability than preventry:
-        continue ## we have already found a good segmentation until endindex ##
-        else
-        chart[endindex] = entry
-        for each newword that matches input starting at position endindex+1
-        newentry = Entry(newword, endindex+1, entry.log-probability + logPwlog⁡Pw(newword), entry)
-        if newentry does not exist in heap:
-        insert newentry into heap
-        ## Get the best segmentation ##
-
-        finalindex is the length of input
-        finalentry = chart[finalindex]
-        The best segmentation starts from finalentry and follows the back-pointer recursively until the first word
-        
-    This work is a part of the Assignment 1 of CMPT 825 Natural Language Processing
-    taught by Prof. Anoop Sarkar.
-
-    AUTHOR: Amirali, GroupNLP
-    INSTITUTION: Simon Fraser University
-    """
+def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
     
     out_file = open('./outfile', 'wb')
     smoothed_prob = 1/float(Pw.Size())
@@ -255,32 +228,48 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob', Pw):
                     
                     if head.get_item('log_prob') > preventry.get_item('log_prob'):
                         chart[endindex] = head
+                    else:
+                        continue
+
                 else: # there was no previous entry
                     chart[endindex] = head
 
                 num_observ = 0
-                
                 # move to the next element in the line
                 sub_utf8line = utf8line[endindex+1:]
 
                 for key in Pw:
                     if sub_utf8line.startswith(key):
+                        # print(sub_utf8line)
+                        # print(len(heap))
+
                         num_observ += 1
-                        heap.push(chartEntry("".join(key).encode('utf-8'),
+
+                        newentry = chartEntry("".join(key).encode('utf-8'),
                             start_pos=endindex+1,
                             end_pos=endindex+len(key),
                             log_prob=np.log2(Pw("".join(key))) + head.get_item('log_prob'),
                             back_ptr=head,
-                            sort_acc_to=sort_acc_to))
+                            sort_acc_to=sort_acc_to)
+
+
+                        heap.push(newentry)
+
 
                 """
                 Check wether the pattern exist in our learn data or no
                 If it doesn't exist we move for one character and push that character to the heap
                 """
-                if num_observ == 0 and len(sub_utf8line) > 0 and len(heap) == 0:
-                    heap.push(chartEntry("".join(sub_utf8line[0]).encode('utf-8'), start_pos=endindex+1, end_pos=endindex+1, \
-                               log_prob=np.log2(smoothed_prob), back_ptr=head, \
-                               sort_acc_to=sort_acc_to))
+                if num_observ == 0 and len(sub_utf8line) > 0:
+                    newentry = chartEntry("".join(sub_utf8line[0]).encode('utf-8'),
+                        start_pos=endindex+1,
+                        end_pos=endindex+1,
+                        log_prob=np.log2(smoothed_prob),
+                        back_ptr=head,
+                        sort_acc_to=sort_acc_to)
+
+
+                    heap.push(newentry)
 
             finalindex = len(utf8line)-1
             
@@ -301,8 +290,9 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob', Pw):
                     ptr = ptr.get_item('back_ptr')
                 
                 out_file.write('\n'.encode('utf-8'))
-                print('Original: ',utf8line)
-                print('Result  : ', result,'\n')
+                # print('Original: ',utf8line)
+                # print('Result  : ', result,'\n')
+                print(result)
 
             else:
                 print(chart)
@@ -313,5 +303,4 @@ Running the algorithem
     1) First fill the PW using count_1w file
     2) Run the baseline algorithem
 """
-Pw = Pdist('data/count_1w.txt')
-baseline_alg(input_filename=opts.input, Pw=Pw)
+baseline_alg(input_filename=opts.input)

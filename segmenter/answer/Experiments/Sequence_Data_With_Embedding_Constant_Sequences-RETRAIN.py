@@ -16,6 +16,7 @@ from sklearn.model_selection import train_test_split
 import keras
 from keras.utils.np_utils import to_categorical
 from keras.preprocessing import sequence
+import cPickle as pickle
 
 
 # In[ ]:
@@ -172,14 +173,25 @@ def nGramSequenceGenerator(labelledlist, n):
 
 
 parent_path = '/home/asa224/Desktop/students_less_asa224/Test Folder on Less/'
-
-print('Generating new word file with new newline unicode encoding..')
-generateWordFile(filename=parent_path + 'wseg_simplified_cn.txt', output_dir=parent_path)
-print('Generating list of tuples of all characters in the word file')
-list_of_tuples = generateTupleList(filename=parent_path + 'word_file_1M')
+useCache = True
 n_timesteps = 13
-print('Generating ngram sequences, with n_timesteps = {}'.format(n_timesteps))
-data = nGramSequenceGenerator(list_of_tuples, n=n_timesteps)
+if useCache == False:
+    print('Generating new word file with new newline unicode encoding..')
+    generateWordFile(filename=parent_path + 'wseg_simplified_cn.txt', output_dir=parent_path)
+    print('Generating list of tuples of all characters in the word file')
+    list_of_tuples = generateTupleList(filename=parent_path + 'word_file_1M')
+    print('Generating ngram sequences, with n_timesteps = {}'.format(n_timesteps))
+    data = nGramSequenceGenerator(list_of_tuples, n=n_timesteps)
+
+    # print('Dumping the intermediate data as pickle...')
+    # pickle.dump( list_of_tuples, open( parent_path + "list_of_tuples_"+str(n_timesteps)+".p", "wb" ) )
+    # pickle.dump( data, open( parent_path + "data_"+str(n_timesteps)+".p", "wb" ) )
+    
+else:
+    print('Generating list of tuples of all characters in the word file')
+    list_of_tuples = generateTupleList(filename=parent_path + 'word_file_1M')
+    print('Generating ngram sequences, with n_timesteps = {}'.format(n_timesteps))
+    data = nGramSequenceGenerator(list_of_tuples, n=n_timesteps)
 
 
 # In[ ]:
@@ -240,8 +252,8 @@ print('Number of unique characters in the dictionary: {}'.format(len(orig_dict))
 
 
 import cPickle as pickle
-pickle.dump( orig_dict, open( "orig_dict.p", "wb" ) )
-pickle.dump( ret_dict, open( "ret_dict.p", "wb" ) )
+pickle.dump( orig_dict, open( parent_path + "orig_dict.p", "wb" ) )
+pickle.dump( ret_dict, open( parent_path + "ret_dict.p", "wb" ) )
 
 
 # ## Create sequences suitable for training
@@ -414,6 +426,7 @@ X_train.shape
 
 # In[ ]:
 
+
 print('Defining Model...')
 from keras.models import Sequential
 from keras.layers import LSTM, TimeDistributed, Dense, Masking, Embedding, Dropout
@@ -430,9 +443,21 @@ model.summary()
 
 # In[ ]:
 
-print('Starting training...')
+
+from keras.callbacks import ModelCheckpoint
+mc = ModelCheckpoint(parent_path + 'checkpoints/' + 'model.seq2seq_nl_{epoch:02d}-{val_acc:.2f}.hdf5', 
+                                monitor='val_acc', 
+                                verbose=0, 
+                                save_best_only=False, 
+                                save_weights_only=False, 
+                                mode='auto', period=1)
+
+
+# In[ ]:
+
+
 history = model.fit(X_train, y_train, epochs=10, 
-          batch_size=200, verbose=1, validation_data=[X_test, y_test])
+          batch_size=100, verbose=1, validation_data=[X_test, y_test], callbacks=[mc])
 model.save('/home/asa224/Desktop/students_less_asa224/Test Folder on Less/model_timestamps_13_epoch1-10.h5')
 
 

@@ -292,12 +292,13 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                 result = finalentry.get_item('word')
                 while ptr:
                     
-                    out_file.write(ptr.get_item('word') + ' ')
+                    # out_file.write(ptr.get_item('word') + ' ')
                     
                     result = ptr.get_item('word') + ' ' + result
                     ptr = ptr.get_item('back_ptr')
                 
-                out_file.write('\n'.encode('utf-8'))
+                # out_file.write('\n'.encode('utf-8'))
+                out_file.write(result+'\n')
                 print(result)
 
             else:

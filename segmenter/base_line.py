@@ -174,6 +174,7 @@ Pw = Pdist('data/count_1w.txt')
 def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
     
     out_file = open('./outfile', 'wb')
+
     smoothed_prob = 1/float(Pw.Size())
     
     with open(input_filename) as f:
@@ -193,12 +194,17 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
             """
             
             num_observ = 0
-            for key in Pw: # for all keys in the probability distribution
+            for key in Pw:
+                # for all keys in the probability distribution
                 # check if the sentence starts with this word
                 if utf8line.startswith(key):
-                    entry = chartEntry("".join(key).encode('utf-8'), start_pos=0, end_pos=len(key)-1, \
-                               log_prob=np.log2(Pw("".join(key))), back_ptr=None, \
-                               sort_acc_to=sort_acc_to)
+                    entry = chartEntry("".join(key).encode('utf-8'),
+                            start_pos=0,
+                            end_pos=len(key)-1,
+                            log_prob=np.log2(Pw("".join(key))),
+                            back_ptr=None,
+                            sort_acc_to=sort_acc_to)
+
                     heap.push(entry)
                     num_observ += 1
 
@@ -210,9 +216,12 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
             
             
             if num_observ == 0:
-                heap.push(chartEntry("".join(utf8line[0]).encode('utf-8'), start_pos=0, end_pos=0, \
-                           log_prob=np.log2(smoothed_prob), back_ptr=None, \
-                           sort_acc_to=sort_acc_to))
+                heap.push(chartEntry("".join(utf8line[0]).encode('utf-8'),
+                    start_pos=0,
+                    end_pos=0,
+                    log_prob=np.log2(Pw("".join(key))),
+                    back_ptr=None,
+                    sort_acc_to=sort_acc_to))
 
             """
             Start filling the `chart` table iteratively. 
@@ -264,11 +273,10 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                     newentry = chartEntry("".join(sub_utf8line[0]).encode('utf-8'),
                         start_pos=endindex+1,
                         end_pos=endindex+1,
-                        log_prob=np.log2(smoothed_prob) + head.get_item('log_prob'),
+                        # log_prob=np.log2(smoothed_prob) + head.get_item('log_prob'),
+                        log_prob=np.log2(Pw("".join(key))) + head.get_item('log_prob'),
                         back_ptr=head,
                         sort_acc_to=sort_acc_to)
-
-
                     heap.push(newentry)
 
             finalindex = len(utf8line)-1
@@ -284,14 +292,13 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                 result = finalentry.get_item('word')
                 while ptr:
                     
-                    out_file.write(ptr.get_item('word') + ' ')
+                    # out_file.write(ptr.get_item('word') + ' ')
                     
                     result = ptr.get_item('word') + ' ' + result
                     ptr = ptr.get_item('back_ptr')
                 
-                out_file.write('\n'.encode('utf-8'))
-                # print('Original: ',utf8line)
-                # print('Result  : ', result,'\n')
+                # out_file.write('\n'.encode('utf-8'))
+                out_file.write(result+'\n')
                 print(result)
 
             else:

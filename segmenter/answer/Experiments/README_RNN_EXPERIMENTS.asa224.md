@@ -6,7 +6,7 @@
 
 ## Modelling Word Segmentation problem in Chinese Text as a Sequence Learning Problem suitable for LSTMs.
 
-The following text summarizes the experiments that I performed as I modelled the problem in two different ways, and also discusses the results that were obtained from those implementations.
+The following text summarizes the experiments that I performed as I modelled the problem in two different ways, and also discusses the results that were obtained from those implementations. For easy viewing of the code along with its output, an HTML version of the iPython Notebook is added to this directory by the name `Seq2Seq_Prediction.html`.
 
 The modelling was inspired by a variety of papers, but most notably [1]. For this implementation, I use the 1M Chinese Setences Dataset provided by Prof. Sarkar for this assignment purposes.
 
@@ -47,7 +47,9 @@ E     | 2       | 0,0,1,0
 S     | 3       | 0,0,0,1
 ~~~~
 
-This parsing produces a list of tuples of the form `[(u'\ue12as', 0), (u'\ue4a3', 2)....(u'\u2354', 3)]` where the first element of the tuple is a character and the second element is the class label.
+This parsing produces a list of tuples of the form `[(u'\ue12as', 0), (u'\ue4a3', 2)....(u'\u2354', 3)]` where the first element of the tuple is a character and the second element is the class label. It looks like this:
+
+![Nothing](ims/sequence.png)
 
 For [Prob_Def_1], newline characters were not parsed and were skipped. It was assumed that the input test file will have newlines to determine where to end a line which the RNN was working on.
 
@@ -83,12 +85,27 @@ This approach was necessary since RNNs expect inputs to have a set size.
 
 However, for [Prob_Def_2] I experimented with constant size sequences, where I create each sequence of `maxlen = 13` along with parsing the newline character. This value was used after reading the paper [1]
 
+## Training Data
+
+After the preprocessing is done, the training set is generated with shapes as follows:
+
+![Nothing](ims/data_shape.png)
+
 ## Defining RNN Model
 
 The model that I train for [Prob_Def_1] is as follows:
 
 ~~~~
-Insert code here
+model = Sequential()
+# first argument is the size of the vocabulary, second argument is the size of embedding, third argument is the
+# number of features in the text, we only have 1 character.
+model.add(Embedding(len(orig_dict), 200, input_length=1))
+model.add(Bidirectional(LSTM(10, return_sequences=True)))
+model.add(Bidirectional(LSTM(10)))
+model.add(Dropout(0.2))
+model.add(Dense(4, activation='softmax'))
+model.compile('adadelta', 'categorical_crossentropy', metrics=['accuracy'])
+model.summary()
 ~~~~
 
 The model that I train for [Prob_Def_2] is as follows:
@@ -102,6 +119,10 @@ model.add(TimeDistributed(Dense(4, activation='softmax')))
 model.compile(loss='categorical_crossentropy', optimizer='adadelta', metrics=['acc'])
 model.summary()
 ~~~~
+
+The model for the above code has the following output shapes per each layer:
+
+![Nothing](ims/model_seq2seq.png)
 
 ### Embedding Layer
 `model.add(Embedding(input_dim=len(orig_dict), output_dim=200,`<br>
@@ -120,7 +141,10 @@ LSTM unit generally looks like this:
 
 ![Nothing](ims/lstm_unit.png)
 
+(Figure courtesy - http://colah.github.io/posts/2015-08-Understanding-LSTMs/)
+
 It has usually three gates -
+
 1. Input Gate
 2. Output Gate
 3. Forget Gate
@@ -146,3 +170,34 @@ model.fit(X_train, y_train, epochs=10,
           batch_size=100, verbose=1, validation_data=[X_test, y_test], callbacks=[mc])
 ~~~~
 The model was trained using `Adadelta` optimizer with default values for learning rate (`lr = 1.0`), rho (`rho = 0.95`) and epsilon (`eps = 1e-8`). Adadelta optimizer is designed in a way that makes the initial choise of learning rate less determining of the fact that the network converges to a good optimal or not. It does this by automatically throttling learning rate using the current values of gradients that propagates through the network.
+
+A single epoch of training gives good results on both training and test set, as shown below:
+
+![Nothing](ims/training.png)
+
+## Discussion and Conclusion
+The accuracy of the model goes upto 90% on test set, and around 91% on the training set after about 10 epochs of training. Each epoch takes approximately 800s to complete.
+
+However, the accuracy on test set during this phase is not entirely reflected on the test data that Prof. Sarkar provided. The test set accuracy for the given test input was about 75% for this model. After more in-depth analysis and review of the issues, I concluded the following:
+
+1. The problem definition with 4 different labels makes it hard to take decision during the test time. This can be explained using a simple example:
+
+Let the test sequence be:
+`ANMOLSHARMA` <br>
+
+and the predicted sequence be:
+`BEMMEBMMMMS`
+
+Out of 10 values the network "correctly" predicted 8 values, but incorrectly predicted 2 values. This makes the accuracy of the network 80%. However, the incorrect predictions directly impact the segmentation of the word. The question arises, how do we segment the word?
+
+`AN MOL SHARM A`
+
+or
+
+`AN MOL SHARMA`
+
+The approach that I applied suffers due to these ambiguities, and explicit rules have to be written during post-processing to handle such cases.
+
+*__However, such rules are subjective. Hence the approach performed poorly than a unigram segmenter. __*
+
+Unfortunately I figured this out AFTER doing all this, but nonetheless it was a great exercise, and I learnt a great deal about RNNs, LSTMs, BLSTM, and how to implement actual NLP solutions.

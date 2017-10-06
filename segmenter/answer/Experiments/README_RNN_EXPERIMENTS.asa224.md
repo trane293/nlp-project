@@ -12,7 +12,7 @@ The modelling was inspired by a variety of papers, but most notably [1]. For thi
 
 *__DISCLAIMER:__* The ideas for framing the problem statement were inspired by number of readings, many from my previous experience in machine learning, and some from my current literature review. However the code/implementation is entirely my own. Also, this was an incredibly hard thing to do in a matter of 4 days, and there were countless issues that were encountered, debugged and solved while implementing this advanced solution.
 
-Also, I have only slept 8 hours since last 4 days. I hope this solution works. If not, I sincerely hope I get *some* extra points for this? Maybe? No? Ok..:(
+Also, having slept only 5 hours since last 4 days makes me hope this solution works, or I'll probably consider moving to himalyas. In all seriousness though I would really appreciate if I get *some* extra points for this humongous effort.
 
 __References: [1] Yushi Yao and (2016). Bi-directional LSTM Recurrent Neural Network for Chinese Word Segmentation. CoRR, abs/1602.04874__
 
@@ -24,7 +24,7 @@ I rephrased the problem of word segmentation in two ways:
 Where given a single character, predict its corresponding label. Labels in this instance are chosen as - B, M, E, and S which stands for Beginning, Middle, End, and Single-letter-word. The problem could also be solved using a simple neural network model, without RNNs, since its basically just predicting a single output given single input without any context. The major downside of this problem was that it did not leverage the power of RNNs (time dimension) where it utilizes the time dimensions to make decision. However it may be argued that neural network has an internal representation that sort of encodes similar information in this case. This problem was however implemented using an LSTM unit based RNN in Python/Keras.
 
 2. [Prob_Def_2] Sequence-to-Sequence prediction problem <br>
-Where given a sequence, predict a sequence of labels. This rephrasing of problem allows me to utilize the time dimension property of RNN where it sees the context of each character while making the decision predicting the corresponding label. This problem was implemented using Bidirectional LSTM unit based RNN in Python/Keras.
+Where given a sequence, predict a sequence of labels. This rephrasing of problem allows me to utilize the time dimension property of RNN where it sees the context of each character while making the decision predicting the corresponding label. This problem was implemented using LSTM unit based RNN in Python/Keras.
 
 **Now I provide an overview of the various data preprocessing steps common to both of these problem definitions that were performed in order bring the dataset close to what I could for training a neural network model.**
 
@@ -46,9 +46,8 @@ M     | 1       | 0,1,0,0
 E     | 2       | 0,0,1,0
 S     | 3       | 0,0,0,1
 ~~~~
-This parsing produces a list of tuples which look something like this -
 
-![Nothing](ims/wp.png)
+This parsing produces a list of tuples of the form `[(u'\ue12as', 0), (u'\ue4a3', 2)....(u'\u2354', 3)]` where the first element of the tuple is a character and the second element is the class label.
 
 For [Prob_Def_1], newline characters were not parsed and were skipped. It was assumed that the input test file will have newlines to determine where to end a line which the RNN was working on.
 
@@ -119,7 +118,7 @@ Long-Short Term Memory Networks is an extension of Recurrent Neural Networks whi
 
 LSTM unit generally looks like this:
 
-![Nothing](ims/wp.png)
+![Nothing](ims/lstm_unit.png)
 
 It has usually three gates -
 1. Input Gate

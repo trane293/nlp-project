@@ -10,9 +10,7 @@ The following text summarizes the experiments that I performed as I modelled the
 
 The modelling was inspired by a variety of papers, but most notably [1]. For this implementation, I use the 1M Chinese Setences Dataset provided by Prof. Sarkar for this assignment purposes.
 
-*__DISCLAIMER:__* The ideas for framing the problem statement were inspired by number of readings, many from my previous experience in machine learning, and some from my current literature review. However the code/implementation is entirely my own. Also, this was an incredibly hard thing to do in a matter of 4 days, and there were countless issues that were encountered, debugged and solved while implementing this advanced solution.
-
-Also, having slept only 5 hours since last 4 days makes me hope this solution works, or I'll probably consider moving to himalyas. In all seriousness though I would really appreciate if I get *some* extra points for this humongous effort.
+*__DISCLAIMER:__* The ideas for framing the problem statement were inspired by number of readings, many from my previous experience in machine learning, and some from my current literature review. However the code/implementation is entirely my own. 
 
 __References: [1] Yushi Yao and (2016). Bi-directional LSTM Recurrent Neural Network for Chinese Word Segmentation. CoRR, abs/1602.04874__
 

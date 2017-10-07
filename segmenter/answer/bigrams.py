@@ -178,7 +178,42 @@ Pw2 = Pdist('data/count_2w.txt')
 
 
 def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
+
+    """
+    Function implementing the given dynamic programming algorithm for chinese word segmentation. 
     
+    The algorithm is as follows: 
+        ## Initialize the heap ##
+
+        for each word that matches input at position 0
+        ## Iteratively fill in chart[i] for all i ##
+
+        while heap is nonempty:
+        entry = top entry in the heap
+        get the endindex based on the length of the word in entry
+        if chart[endindex] has a previous entry, preventry
+        if entry has a higher probability than preventry:
+        chart[endindex] = entry
+        if entry has a lower or equal probability than preventry:
+        continue ## we have already found a good segmentation until endindex ##
+        else
+        chart[endindex] = entry
+        for each newword that matches input starting at position endindex+1
+        insert newentry into heap
+        ## Get the best segmentation ##
+
+        finalindex is the length of input
+        finalentry = chart[finalindex]
+        The best segmentation starts from finalentry and follows the back-pointer recursively until the first word
+        
+    This work is a part of the Assignment 1 of CMPT 825 Natural Language Processing
+    taught by Prof. Anoop Sarkar.
+
+    AUTHOR: Amirali, Shreeashish GroupNLP
+    INSTITUTION: Simon Fraser University
+    """
+ 
+
     out_file = open('./outfile', 'wb')
 
     smoothed_prob = 1/float(Pw.Size())

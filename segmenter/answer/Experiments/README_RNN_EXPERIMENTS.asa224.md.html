@@ -18,19 +18,20 @@
 <h2 id="modelling-word-segmentation-problem-in-chinese-text-as-a-sequence-learning-problem-suitable-for-lstms.">Modelling Word Segmentation problem in Chinese Text as a Sequence Learning Problem suitable for LSTMs.</h2>
 <p>The following text summarizes the experiments that I performed as I modelled the problem in two different ways, and also discusses the results that were obtained from those implementations. For easy viewing of the code along with its output, an HTML version of the iPython Notebook is added to this directory by the name <code>Seq2Seq_Prediction.html</code>.</p>
 <p>The modelling was inspired by a variety of papers, but most notably [1]. For this implementation, I use the 1M Chinese Setences Dataset provided by Prof. Sarkar for this assignment purposes.</p>
-<p><em><strong>DISCLAIMER:</strong></em> The ideas for framing the problem statement were inspired by number of readings, many from my previous experience in machine learning, and some from my current literature review. However the code/implementation is entirely my own.</p>
+<p><em><strong>DISCLAIMER:</strong></em> The ideas for framing the problem statement were inspired by number of readings, many from my previous experience in machine learning, and some from my current literature review. However the code/implementation is entirely my own. Also, this was an incredibly hard thing to do in a matter of 4 days, and there were countless issues that were encountered, debugged and solved while implementing this advanced solution.</p>
+<p>Also, having slept only 5 hours since last 4 days makes me hope this solution works, or I'll probably consider moving to himalyas. In all seriousness though I would really appreciate if I get <em>some</em> extra points for this humongous effort.</p>
 <p><strong>References: [1] Yushi Yao and (2016). Bi-directional LSTM Recurrent Neural Network for Chinese Word Segmentation. CoRR, abs/1602.04874</strong></p>
 <h2 id="problem-statements">Problem Statements</h2>
 <p>I rephrased the problem of word segmentation in two ways:</p>
 <ol style="list-style-type: decimal">
-<li><p>[Prob_Def_1] Character-to-Character prediction problem <br> Where given a single character, predict its corresponding label. Labels in this instance are chosen as - B, M, E, and S which stands for Beginning, Middle, End, and Single-letter-word. The problem could also be solved using a simple neural network model, without RNNs, since its basically just predicting a single output given single input without any context. The major downside of this problem was that it did not leverage the power of RNNs where it utilizes the time dimensions to make decision. However it may be argued that neural network has an internal representation that encodes similar information in this case. This problem was however implemented using an LSTM unit based RNN in Python/Keras.</p></li>
+<li><p>[Prob_Def_1] Character-to-Character prediction problem <br> Where given a single character, predict its corresponding label. Labels in this instance are chosen as - B, M, E, and S which stands for Beginning, Middle, End, and Single-letter-word. The problem could also be solved using a simple neural network model, without RNNs, since its basically just predicting a single output given single input without any context. The major downside of this problem was that it did not leverage the power of RNNs (time dimension) where it utilizes the time dimensions to make decision. However it may be argued that neural network has an internal representation that sort of encodes similar information in this case. This problem was however implemented using an LSTM unit based RNN in Python/Keras.</p></li>
 <li><p>[Prob_Def_2] Sequence-to-Sequence prediction problem <br> Where given a sequence, predict a sequence of labels. This rephrasing of problem allows me to utilize the time dimension property of RNN where it sees the context of each character while making the decision predicting the corresponding label. This problem was implemented using LSTM unit based RNN in Python/Keras.</p></li>
 </ol>
 <p><strong>Now I provide an overview of the various data preprocessing steps common to both of these problem definitions that were performed in order bring the dataset close to what I could for training a neural network model.</strong></p>
 <h3 id="parsing-and-assigning-labels">Parsing and Assigning Labels</h3>
 <p>Given a set of words, we assign the labels to each character seen in the training example. For example:</p>
 <p><code>A GOOD MAN ANMOL SHARMA</code> <br> <code>| |||| ||| ||||| ||||||</code> <br> <code>S BMME BME BMMME BMMMME</code></p>
-<p>The labels were converted to categorical vector representation, using the following truth table -</p>
+<p>The labels were converted to categorical vector representation as well, using this truth table -</p>
 <pre><code>      | Integer | Vector
 Label | Value   | Representation
 --------------------------------
@@ -43,10 +44,11 @@ S     | 3       | 0,0,0,1</code></pre>
 <img src="ims/sequence.png" alt="Nothing" />
 <p class="caption">Nothing</p>
 </div>
-<p>For [Prob_Def_1] the issue arises where the newline character either have to be 1) ignored, or 2) incorporated in the parsing, probably as a standalone character. After some initial experiments, I found that ignoring newline would lead me to lose information about lines, which the network cannot determine at test time. So the network lead to generating an output text with basically no new lines. After some literature review, I found out that actually parsing newline as a single-letter-character can help the RNN make decisions, since context often changes after each line, and newline character can help RNN to make that decision.</p>
-<p>Hence for [Prob_Def_2] we parse newline characters as having label &quot;S&quot;. One interesting implementation related fact is that the newline chracter is encoded as a special symbol in unicode, since I was having issues reading it back from a file. The special symbol is chosen at random,and appears to be a degree sign.</p>
+<p>For [Prob_Def_1], newline characters were not parsed and were skipped. It was assumed that the input test file will have newlines to determine where to end a line which the RNN was working on.</p>
+<p>However, for [Prob_Def_1] the issue arises where the newline character either have to be 1) ignored, or 2) incorporated in the parsing, probably as a standalone character. After some initial experiments, I found that ignoring newline would lead me to lose information about lines, which the network cannot determine at test time. So the network lead to generating an output text with basically no new lines. After some literature review, I found out that actually parsing newline as a single-letter-character can help the RNN make decisions, since context often changes after each line, and newline character can help RNN to make that decision.</p>
+<p>Hence for [Prob_Def_2] we parse newline characters as having label &quot;S&quot;. One interesting implementation related thing is that the newline chracter is encoded as a special symbol in unicode, since I was having issues reading it back from a file. The special symbol is chosen at random,and appears to be a degree sign.</p>
 <h3 id="initial-integer-embedding">Initial Integer Embedding</h3>
-<p>Machine learning models cannot directly work on categorical data, the issue arises that the data must converted to an integral representation to make it compatible for training. The method that I use for this is simple, and is highlighted here using English language -</p>
+<p>So machine learning models cannot directly work on categorical data, the issue arises that the data must converted to an integral representation to make it compatible for training. The method that I use for this is simple, and is highlighted here using English language -</p>
 <p>Given an English alphabet of unique characters, we find there are 26 unique characters. Hence, for each character, we assign an integer value such that:</p>
 <p><code>A B ...... X   Y   Z</code><br> <code>| | ...... |   |   |</code><br> <code>0 1 ...... 23 24 25</code><br></p>
 <p>I implement this for chinese characters by finding the number of unique characters seen in the training set, which totalled to about 5920. A pair of dictionaries were generated (one for word-to-int and other for int-to-word) for converting the dataset.</p>
@@ -123,7 +125,6 @@ model.summary()</code></pre>
 <pre><code>model.fit(X_train, y_train, epochs=10,
           batch_size=100, verbose=1, validation_data=[X_test, y_test], callbacks=[mc])</code></pre>
 <p>The model was trained using <code>Adadelta</code> optimizer with default values for learning rate (<code>lr = 1.0</code>), rho (<code>rho = 0.95</code>) and epsilon (<code>eps = 1e-8</code>). Adadelta optimizer is designed in a way that makes the initial choise of learning rate less determining of the fact that the network converges to a good optimal or not. It does this by automatically throttling learning rate using the current values of gradients that propagates through the network.</p>
-<p>The main database of 1M chinese sentences was divided into two disjoint sets for training and testing. The ratio of training to whole dataset was 80% and test set to whole dataset was 20%.</p>
 <p>A single epoch of training gives good results on both training and test set, as shown below:</p>
 <div class="figure">
 <img src="ims/training.png" alt="Nothing" />
@@ -132,7 +133,9 @@ model.summary()</code></pre>
 <h2 id="discussion-and-conclusion">Discussion and Conclusion</h2>
 <p>The accuracy of the model goes upto 90% on test set, and around 91% on the training set after about 10 epochs of training. Each epoch takes approximately 800s to complete.</p>
 <p>However, the accuracy on test set during this phase is not entirely reflected on the test data that Prof. Sarkar provided. The test set accuracy for the given test input was about 75% for this model. After more in-depth analysis and review of the issues, I concluded the following:</p>
-<p>The problem definition with 4 different labels makes it hard to take decision during the test time. This can be explained using a simple example:</p>
+<ol style="list-style-type: decimal">
+<li>The problem definition with 4 different labels makes it hard to take decision during the test time. This can be explained using a simple example:</li>
+</ol>
 <p>Let the test sequence be: <code>ANMOLSHARMA</code> <br></p>
 <p>and the predicted sequence be: <code>BEMMEBMMMMS</code></p>
 <p>Out of 10 values the network &quot;correctly&quot; predicted 8 values, but incorrectly predicted 2 values. This makes the accuracy of the network 80%. However, the incorrect predictions directly impact the segmentation of the word. The question arises, how do we segment the word?</p>

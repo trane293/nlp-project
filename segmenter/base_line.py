@@ -159,7 +159,8 @@ class Pdist(dict):
     def __call__(self, key):
         if key in self:
             return float(self[key]) / float(self.N)
-        # else: return self.missingfn(key, self.N)
+        # else:
+        #     return self.missingfn(key, self.N)
         elif len(key) == 1:
             return self.missingfn(key, self.N)
         else:
@@ -170,18 +171,20 @@ class Pdist(dict):
 
 
 Pw = Pdist('data/count_1w.txt')
+Pw2 = Pdist('data/count_2w.txt')
+
 
 def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
-    
+
     out_file = open('./outfile', 'wb')
 
     smoothed_prob = 1/float(Pw.Size())
-    
+
     with open(input_filename) as f:
-        
+
         # iterate over all the lines in the input file
         for line in f:
-            
+
             # initialize the dynamic programming table chart and heap
             chart = dict()
             heap = Heap()
@@ -192,16 +195,17 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
               Initializing step
               Finding each word that matches input at position 0
             """
-            
+
             num_observ = 0
-            for key in Pw:
+            for key in Pw2:
                 # for all keys in the probability distribution
                 # check if the sentence starts with this word
+
                 if utf8line.startswith(key):
                     entry = chartEntry("".join(key).encode('utf-8'),
                             start_pos=0,
                             end_pos=len(key)-1,
-                            log_prob=np.log2(Pw("".join(key))),
+                            log_prob=np.log2(Pw2("".join(key))),
                             back_ptr=None,
                             sort_acc_to=sort_acc_to)
 
@@ -213,8 +217,8 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
             If it doesn't exist we move forward one character and push the unseen character to the heap
             with a smoothed probability 1/N (where N = number of elements in the distribution)
             """
-            
-            
+
+
             if num_observ == 0:
                 heap.push(chartEntry("".join(utf8line[0]).encode('utf-8'),
                     start_pos=0,
@@ -224,17 +228,17 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                     sort_acc_to=sort_acc_to))
 
             """
-            Start filling the `chart` table iteratively. 
+            Start filling the `chart` table iteratively.
             """
             while heap:
                 head = heap.pop() # pop the item with highest log-probability
                 utf8word = head.get_item('word').decode('utf-8')
                 endindex = head.get_item('start_pos') + len(utf8word)-1
-                
+
                 if endindex in chart:
                     # get the previous entry
                     preventry = chart[endindex]
-                    
+
                     if head.get_item('log_prob') > preventry.get_item('log_prob'):
                         chart[endindex] = head
                     else:
@@ -246,18 +250,34 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                 num_observ = 0
                 # move to the next element in the line
                 sub_utf8line = utf8line[endindex+1:]
+                prev_utf8line = utf8line[0:endindex+2]
 
                 for key in Pw:
                     if sub_utf8line.startswith(key):
                         # print(sub_utf8line)
                         # print(len(heap))
 
+                        # print("      KEY:" + key)
+                        # print("PREV HEAD:" + head.get_item('word').decode('utf-8'))
+                        # print("UTF8-LINE:" + prev_utf8line)
+
+
+                        # print(Pw2(head.get_item('word').decode('utf-8') + " " + "".join(key)))
+                        probability = Pw2(head.get_item('word').decode('utf-8') + " " +"".join(key))
+
+                        if(probability == None):
+                            probability = -np.log2((Pw.Size() + Pw2.Size())) + head.get_item('log_prob')
+                        else:
+                            probability = np.log2(
+                            Pw2(head.get_item('word').decode('utf-8') + " " +"".join(key))/ Pw(head.get_item('word').decode('utf-8')) ) + head.get_item('log_prob')
+
                         num_observ += 1
 
                         newentry = chartEntry("".join(key).encode('utf-8'),
                             start_pos=endindex+1,
                             end_pos=endindex+len(key),
-                            log_prob=np.log2(Pw("".join(key))) + head.get_item('log_prob'),
+                            # log_prob=np.log2(Pw("".join(key))) + head.get_item('log_prob'),
+                            log_prob=probability,
                             back_ptr=head,
                             sort_acc_to=sort_acc_to)
 
@@ -269,18 +289,26 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                 Check wether the pattern exist in our learn data or no
                 If it doesn't exist we move for one character and push that character to the heap
                 """
+                # probability = np.log2( ( 1 +
+                #         Pw2(head.get_item('word').decode('utf-8') + " "
+                #         +"".join(key)))
+                #             /(Pw.Size() + Pw2.Size() + Pw(head.get_item('word').decode('utf-8')) ) ) + head.get_item('log_prob')
+
                 if num_observ == 0 and len(sub_utf8line) > 0:
+                    # print("DEBUG")
+                    # print(key)
                     newentry = chartEntry("".join(sub_utf8line[0]).encode('utf-8'),
                         start_pos=endindex+1,
                         end_pos=endindex+1,
-                        # log_prob=np.log2(smoothed_prob) + head.get_item('log_prob'),
                         log_prob=np.log2(Pw("".join(key))) + head.get_item('log_prob'),
+                        # log_prob=np.log2(smoothed_prob) + head.get_item('log_prob'),
+                        # log_prob=-np.log2(Pw.Size() + Pw2.Size()) + head.get_item('log_prob'),
+                        # log_prob=probability,
                         back_ptr=head,
                         sort_acc_to=sort_acc_to)
                     heap.push(newentry)
-
             finalindex = len(utf8line)-1
-            
+
             if finalindex in chart:
                 finalentry = chart[finalindex]
 
@@ -291,12 +319,12 @@ def baseline_alg(input_filename='data/input', sort_acc_to='log_prob'):
                 ptr = finalentry.get_item('back_ptr')
                 result = finalentry.get_item('word')
                 while ptr:
-                    
+
                     # out_file.write(ptr.get_item('word') + ' ')
-                    
+
                     result = ptr.get_item('word') + ' ' + result
                     ptr = ptr.get_item('back_ptr')
-                
+
                 # out_file.write('\n'.encode('utf-8'))
                 out_file.write(result+'\n')
                 print(result)

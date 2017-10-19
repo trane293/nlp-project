@@ -10,7 +10,9 @@ The following text summarizes the experiments that I performed as I modelled the
 
 The modelling was inspired by a variety of papers, but most notably [1]. For this implementation, I use the 1M Chinese Setences Dataset provided by Prof. Sarkar for this assignment purposes.
 
-*__DISCLAIMER:__* The ideas for framing the problem statement were inspired by number of readings, many from my previous experience in machine learning, and some from my current literature review. However the code/implementation is entirely my own. 
+*__DISCLAIMER:__* The ideas for framing the problem statement were inspired by number of readings, many from my previous experience in machine learning, and some from my current literature review. However the code/implementation is entirely my own. Also, this was an incredibly hard thing to do in a matter of 4 days, and there were countless issues that were encountered, debugged and solved while implementing this advanced solution.
+
+Also, having slept only 5 hours since last 4 days makes me hope this solution works, or I'll probably consider moving to himalyas. In all seriousness though I would really appreciate if I get *some* extra points for this humongous effort.
 
 __References: [1] Yushi Yao and (2016). Bi-directional LSTM Recurrent Neural Network for Chinese Word Segmentation. CoRR, abs/1602.04874__
 
@@ -19,7 +21,7 @@ __References: [1] Yushi Yao and (2016). Bi-directional LSTM Recurrent Neural Net
 I rephrased the problem of word segmentation in two ways:
 
 1. [Prob_Def_1] Character-to-Character prediction problem <br>
-Where given a single character, predict its corresponding label. Labels in this instance are chosen as - B, M, E, and S which stands for Beginning, Middle, End, and Single-letter-word. The problem could also be solved using a simple neural network model, without RNNs, since its basically just predicting a single output given single input without any context. The major downside of this problem was that it did not leverage the power of RNNs where it utilizes the time dimensions to make decision. However it may be argued that neural network has an internal representation that encodes similar information in this case. This problem was however implemented using an LSTM unit based RNN in Python/Keras.
+Where given a single character, predict its corresponding label. Labels in this instance are chosen as - B, M, E, and S which stands for Beginning, Middle, End, and Single-letter-word. The problem could also be solved using a simple neural network model, without RNNs, since its basically just predicting a single output given single input without any context. The major downside of this problem was that it did not leverage the power of RNNs (time dimension) where it utilizes the time dimensions to make decision. However it may be argued that neural network has an internal representation that sort of encodes similar information in this case. This problem was however implemented using an LSTM unit based RNN in Python/Keras.
 
 2. [Prob_Def_2] Sequence-to-Sequence prediction problem <br>
 Where given a sequence, predict a sequence of labels. This rephrasing of problem allows me to utilize the time dimension property of RNN where it sees the context of each character while making the decision predicting the corresponding label. This problem was implemented using LSTM unit based RNN in Python/Keras.
@@ -33,7 +35,7 @@ Given a set of words, we assign the labels to each character seen in the trainin
 `| |||| ||| ||||| ||||||` <br>
 `S BMME BME BMMME BMMMME`
 
-The labels were converted to categorical vector representation, using the following truth table -
+The labels were converted to categorical vector representation as well, using this truth table -
 
 ~~~~
       | Integer | Vector
@@ -49,13 +51,15 @@ This parsing produces a list of tuples of the form `[(u'\ue12as', 0), (u'\ue4a3'
 
 ![Nothing](ims/sequence.png)
 
-For [Prob_Def_1] the issue arises where the newline character either have to be 1) ignored, or 2) incorporated in the parsing, probably as a standalone character. After some initial experiments, I found that ignoring newline would lead me to lose information about lines, which the network cannot determine at test time. So the network lead to generating an output text with basically no new lines. After some literature review, I found out that actually parsing newline as a single-letter-character can help the RNN make decisions, since context often changes after each line, and newline character can help RNN to make that decision.
+For [Prob_Def_1], newline characters were not parsed and were skipped. It was assumed that the input test file will have newlines to determine where to end a line which the RNN was working on.
 
-Hence for [Prob_Def_2] we parse newline characters as having label "S". One interesting implementation related fact is that the newline chracter is encoded as a special symbol in unicode, since I was having issues reading it back from a file. The special symbol is chosen at random,and appears to be a degree sign.
+However, for [Prob_Def_1] the issue arises where the newline character either have to be 1) ignored, or 2) incorporated in the parsing, probably as a standalone character. After some initial experiments, I found that ignoring newline would lead me to lose information about lines, which the network cannot determine at test time. So the network lead to generating an output text with basically no new lines. After some literature review, I found out that actually parsing newline as a single-letter-character can help the RNN make decisions, since context often changes after each line, and newline character can help RNN to make that decision.
+
+Hence for [Prob_Def_2] we parse newline characters as having label "S". One interesting implementation related thing is that the newline chracter is encoded as a special symbol in unicode, since I was having issues reading it back from a file. The special symbol is chosen at random,and appears to be a degree sign.
 
 ### Initial Integer Embedding
 
-Machine learning models cannot directly work on categorical data, the issue arises that the data must converted to an integral representation to make it compatible for training. The method that I use for this is simple, and is highlighted here using English language -
+So machine learning models cannot directly work on categorical data, the issue arises that the data must converted to an integral representation to make it compatible for training. The method that I use for this is simple, and is highlighted here using English language -
 
 Given an English alphabet of unique characters, we find there are 26 unique characters. Hence, for each character, we assign an integer value such that:
 
@@ -167,8 +171,6 @@ model.fit(X_train, y_train, epochs=10,
 ~~~~
 The model was trained using `Adadelta` optimizer with default values for learning rate (`lr = 1.0`), rho (`rho = 0.95`) and epsilon (`eps = 1e-8`). Adadelta optimizer is designed in a way that makes the initial choise of learning rate less determining of the fact that the network converges to a good optimal or not. It does this by automatically throttling learning rate using the current values of gradients that propagates through the network.
 
-The main database of 1M chinese sentences was divided into two disjoint sets for training and testing. The ratio of training to whole dataset was 80% and test set to whole dataset was 20%. 
-
 A single epoch of training gives good results on both training and test set, as shown below:
 
 ![Nothing](ims/training.png)
@@ -178,7 +180,7 @@ The accuracy of the model goes upto 90% on test set, and around 91% on the train
 
 However, the accuracy on test set during this phase is not entirely reflected on the test data that Prof. Sarkar provided. The test set accuracy for the given test input was about 75% for this model. After more in-depth analysis and review of the issues, I concluded the following:
 
-The problem definition with 4 different labels makes it hard to take decision during the test time. This can be explained using a simple example:
+1. The problem definition with 4 different labels makes it hard to take decision during the test time. This can be explained using a simple example:
 
 Let the test sequence be:
 `ANMOLSHARMA` <br>

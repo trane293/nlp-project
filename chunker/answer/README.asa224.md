@@ -20,6 +20,8 @@
 9. For easy readability, the markdown version of this detailed file is also provided in the form of an HTML version, with the name `README_EXPERIMENTS.asa224.md.html`.
 
 ## Commit Identifiers
+
+The following commit identifiers were obtained using the command `git log`. Please note these were made on the branch `new`, not `master`. The current solution will be on `master`.
 ~~~
 commit 52034c1561a9f963674ac4c82505297ef2dba0aa
 Author: asa224 <asa224@sfu.ca>

@@ -27,6 +27,7 @@ Inside the perceptron training loop:
 """
 
 from __future__ import print_function
+from __future__ import division
 import perc
 import sys, optparse, os
 from collections import defaultdict
@@ -35,6 +36,9 @@ from collections import defaultdict
 def perc_train(train_data, tagset, numepochs):
     # initialize feature vector to defaultdict with ints
     feat_vec = defaultdict(int)
+    biglength = numepochs*len(train_data)
+    step = biglength
+
     theta_vec = defaultdict(int)
 
     # defauklt tag is B-NP, which is at first place in tagset
@@ -46,6 +50,7 @@ def perc_train(train_data, tagset, numepochs):
         print('Currently in Epoch {}'.format(e), file=sys.stderr)
         # iterate over each sentence
         for (labeled_list, feat_list) in train_data:
+            delta = step/biglength
             # feat_index should go back to zero after one sentence is complete, this was a major bug which lead to
             # overflow of feat_index when the sentence changed...
             feat_index = 0
@@ -60,7 +65,6 @@ def perc_train(train_data, tagset, numepochs):
 
             # just an assertion to satiate my paranoia
             assert len(ground_truth) == len(output)
-
             if output != ground_truth:
                 # iterate over each word in the sentence
                 for num in range(len(output)):
@@ -72,34 +76,42 @@ def perc_train(train_data, tagset, numepochs):
                     # if we made a mistake on this word, update weight vectors
                     if output[num] != ground_truth[num]:
                         mistakes += 1
-
                         # iterate over all the features (we have 20 features)
                         for f_num in range(len(feats)):
                             # print("INFO:root:updating feat_vec with feature_id: ({}, {}) value: 1".format(feats[f_num], ground_truth[num]), file=sys.stderr)
-                            feat_vec[feats[f_num], ground_truth[num]] += 1
+                            feat_vec[feats[f_num], ground_truth[num]] += delta
                             # print("INFO:root:updating feat_vec with feature_id: ({}, {}) value: -1".format(feats[f_num], output[num]), file=sys.stderr)
-                            feat_vec[feats[f_num], output[num]] -= 1
+                            feat_vec[feats[f_num], output[num]] -= delta
+            step-=1
 
-            for k in set(feat_vec):
-                theta_vec[k] = theta_vec[k] + feat_vec[k]
+            # for k in set(feat_vec):
+            #     print("FEAT_VEC  ",feat_vec[k])
+            #     theta_vec[k] = theta_vec[k] + feat_vec[k]
+            #     print("theta_vec ",theta_vec[k])
+            #
+            #     if k==3:
+            #         exit()
+            #     # print(feat_vec[k])
 
             # print('Sentence update finish!')
 
         print('number of mistakes: {}'.format(mistakes), file=sys.stderr)
         print('current error on training set: {}'.format(float(mistakes*100)/total_instances), file=sys.stderr)
         # print('feat_vec: {}'.format(feat_vec), file=sys.stderr)
-    # return feat_vec
-    final_result = defaultdict(int)
-    for k in set(theta_vec):
-        final_result[k] = theta_vec[k] / float(len(train_data) * numepochs)
-    return final_result
+
+    return feat_vec
+
+    # final_result = defaultdict(int)
+    # for k in set(theta_vec):
+    #     final_result[k] = theta_vec[k] / float(len(train_data) * numepochs)
+    # return final_result
 
 if __name__ == '__main__':
     optparser = optparse.OptionParser()
     optparser.add_option("-t", "--tagsetfile", dest="tagsetfile", default=os.path.join("../data", "tagset.txt"), help="tagset that contains all the labels produced in the output, i.e. the y in \phi(x,y)")
     optparser.add_option("-i", "--trainfile", dest="trainfile", default=os.path.join("../data", "train.txt.gz"), help="input data, i.e. the x in \phi(x,y)")
     optparser.add_option("-f", "--featfile", dest="featfile", default=os.path.join("../data", "train.feats.gz"), help="precomputed features for the input data, i.e. the values of \phi(x,_) without y")
-    optparser.add_option("-e", "--numepochs", dest="numepochs", default=int(30), help="number of epochs of training; in each epoch we iterate over over all the training examples")
+    optparser.add_option("-e", "--numepochs", dest="numepochs", default=int(10), help="number of epochs of training; in each epoch we iterate over over all the training examples")
     optparser.add_option("-m", "--modelfile-save", dest="modelfile", default=os.path.join("groupNLP.model"), help="filename to store the trained weights in")
     (opts, _) = optparser.parse_args()
 

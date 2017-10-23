@@ -101,9 +101,8 @@ def perc_train(train_data, tagset, numepochs):
 
 
         # if(e%10 == 0):
-        print(e)
         print('writing weights to the model file{}...'.format(e))
-        perc.perc_write_to_file(feat_vec, opts.modelfile + str(e))
+        perc.perc_write_to_file(feat_vec, '../data/snapshots/an_' + str(e) + '.model')
         print('done writing to model file {}!'.format(opts.modelfile))
 
     return feat_vec
@@ -118,7 +117,7 @@ if __name__ == '__main__':
     optparser.add_option("-t", "--tagsetfile", dest="tagsetfile", default=os.path.join("../data", "tagset.txt"), help="tagset that contains all the labels produced in the output, i.e. the y in \phi(x,y)")
     optparser.add_option("-i", "--trainfile", dest="trainfile", default=os.path.join("../data", "train.txt.gz"), help="input data, i.e. the x in \phi(x,y)")
     optparser.add_option("-f", "--featfile", dest="featfile", default=os.path.join("../data", "train.feats.gz"), help="precomputed features for the input data, i.e. the values of \phi(x,_) without y")
-    optparser.add_option("-e", "--numepochs", dest="numepochs", default=int(70), help="number of epochs of training; in each epoch we iterate over over all the training examples")
+    optparser.add_option("-e", "--numepochs", dest="numepochs", default=int(100), help="number of epochs of training; in each epoch we iterate over over all the training examples")
     optparser.add_option("-m", "--modelfile-save", dest="modelfile", default=os.path.join("groupNLP.model"), help="filename to store the trained weights in")
     (opts, _) = optparser.parse_args()
 

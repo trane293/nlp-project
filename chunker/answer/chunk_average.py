@@ -101,10 +101,10 @@ def perc_train(train_data, tagset, numepochs):
 
 
         # if(e%10 == 0):
-        print(e)
-        print('writing weights to the model file{}...'.format(e))
-        perc.perc_write_to_file(feat_vec, opts.modelfile + str(e))
-        print('done writing to model file {}!'.format(opts.modelfile))
+        #
+        # print('writing weights to the model file{}...'.format(e))
+        # perc.perc_write_to_file(feat_vec, opts.modelfile + str(e))
+        # print('done writing to model file {}!'.format(opts.modelfile))
 
     return feat_vec
 
@@ -129,6 +129,6 @@ if __name__ == '__main__':
     print('starting training for {} epochs...'.format(opts.numepochs))
 
     feat_vec = perc_train(train_data, tagset, opts.numepochs)
-    # print('writing weights to the model file...')
-    # perc.perc_write_to_file(feat_vec, opts.modelfile)
-    # print('done writing to model file {}!'.format(opts.modelfile))
+    print('writing weights to the model file...')
+    perc.perc_write_to_file(feat_vec, opts.modelfile)
+    print('done writing to model file {}!'.format(opts.modelfile))

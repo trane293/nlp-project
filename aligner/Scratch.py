@@ -107,13 +107,13 @@ print(des_vocab[0:5], file=sys.stderr)
 
 k = 0
 t_k = {}
-count_comb = {}
-count_e = {}
 uni_prob = 1.0 / np.shape(src_vocab)[0]
 epochs = 5
 
 for _i in range(epochs):
     print('Currently on training epoch {}..'.format(_i+1), file=sys.stderr)
+    count_comb = {}
+    count_e = {}
     # iterate over all training examples
     for src_sent_eg, dest_sent_eg in zip(src_sent, dest_sent):
         for f_i in src_sent_eg:
@@ -156,16 +156,12 @@ for _i in range(epochs):
 print('Aligning...', file=sys.stderr)
 print('Source | Destination', file=sys.stderr)
 for src_sent_eg, dest_sent_eg in zip(src_sent, dest_sent):
-    i = 0
-    for f_i in src_sent_eg:
+    for i, f_i in enumerate(src_sent_eg):
         bestp = 0
         bestj = 0
-        j = 0
-        for e_j in dest_sent_eg:
+        for j, e_j in enumerate(dest_sent_eg):
             if t_k[(f_i, e_j)] > bestp:
                 bestp = t_k[(f_i, e_j)]
-                bestj = e_j
-                j += 1
-        sys.stdout.write('{}-{} '.format(i,j))
-        i += 1
+                bestj = j
+        sys.stdout.write('{}-{} '.format(i,bestj))
     sys.stdout.write('\n')

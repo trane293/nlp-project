@@ -132,12 +132,12 @@ for _i in range(epochs):
                 # initialize counts on the fly
                 if (f_i, e_j) not in count_comb:
 #                     print('({}, {}) not in count_comb, initializing to 0!'.format(f_i, e_j))
-                    count_comb[(f_i, e_j)] = 0
+                    count_comb[(f_i, e_j)] = 0.0
                 
                 # initialize counts on the fly
                 if e_j not in count_e:
 #                     print('({}) not in count_e, initializing to 0!'.format(e_j))
-                    count_e[e_j] = 0
+                    count_e[e_j] = 0.0
                     
                 count_comb[(f_i, e_j)] += c
                 count_e[e_j] += c
@@ -145,7 +145,7 @@ for _i in range(epochs):
     print('Updating t_k counts...', file=sys.stderr)
     for f_e_keys in count_comb:
         # f_e_keys[0] = f_i, f_e_keys[1] = e_j
-        t_k[(f_e_keys[0], f_e_keys[1])] = float(count_comb[f_e_keys]) / count_e[f_e_keys[1]]
+        t_k[(f_e_keys[0], f_e_keys[1])] = count_comb[f_e_keys] / count_e[f_e_keys[1]]
 
 
 # # Make predictions using this trained model..

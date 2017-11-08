@@ -24,6 +24,7 @@ optparser.add_option("-e", "--english", dest="english", default="en", help="suff
 optparser.add_option("-f", "--french", dest="french", default="de", help="suffix of Source (source language) filename (default=de)")
 optparser.add_option("-l", "--logfile", dest="logfile", default=None, help="filename for logging output")
 optparser.add_option("-t", "--threshold", dest="threshold", default=0.5, type="float", help="threshold for alignment (default=0.5)")
+optparser.add_option("-i", "--epochs", dest="epochs", default=5, type="int", help="Number of epochs to train for (default=5)")
 optparser.add_option("-n", "--num_sentences", dest="num_sents", default=100000, type="int", help="Number of sentences to use for training and alignment")
 (opts, _) = optparser.parse_args()
 
@@ -108,8 +109,8 @@ print(des_vocab[0:5], file=sys.stderr)
 k = 0
 t_k = {}
 uni_prob = 1.0 / np.shape(src_vocab)[0]
-epochs = 5
-
+epochs = opts.epochs
+print('Starting training for {} epochs..'.format(epochs), file=sys.stderr)
 for _i in range(epochs):
     print('Currently on training epoch {}..'.format(_i+1), file=sys.stderr)
     count_comb = {}

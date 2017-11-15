@@ -122,7 +122,11 @@ for _i in range(epochs):
     count_e_2 = {}
     count_e = {}
     # iterate over all training examples
-    for src_sent_eg, dest_sent_eg in zip(src_sent, dest_sent):
+    for iterator, (src_sent_eg, dest_sent_eg) in enumerate(zip(src_sent, dest_sent)):
+
+        if iterator >= opts.num_sents:
+            break
+
         for f_i in src_sent_eg:
             Z = 0.0
             for e_j in dest_sent_eg:
@@ -150,53 +154,41 @@ for _i in range(epochs):
                 count_comb[(f_i, e_j)] += c
                 count_e[e_j] += c
 
-    
+        for e_j in dest_sent_eg:
+            Z_2 = 0.0
+            for f_i in src_sent_eg:
+
+                if (e_j, f_i) not in t_k_2:
+                    t_k_2[(e_j, f_i)] = uni_prob_2
+
+                Z_2 += t_k_2[(e_j, f_i)]
+
+            for f_i in src_sent_eg:
+                c_2 = t_k_2[(e_j, f_i)] / Z_2
+
+                if (e_j, f_i) not in count_comb_2:
+                    count_comb_2[(e_j, f_i)] = 0.0
+
+                if f_i not in count_e_2:
+                    count_e_2[f_i] = 0.0
+
+                count_comb_2[(e_j, f_i)] += c_2
+                count_e_2[f_i] += c_2
+
     print('Updating t_k counts...', file=sys.stderr)
     for f_e_keys in count_comb:
         # f_e_keys[0] = f_i, f_e_keys[1] = e_j
         lmda = 0.01
-        t_k_2[(f_e_keys[0], f_e_keys[1])] = \
+        t_k[(f_e_keys[0], f_e_keys[1])] = \
             lmda * (count_comb['nOnE', f_e_keys[1]] / count_e[f_e_keys[1]]) \
             + (1 - lmda) * count_comb[f_e_keys] / count_e[f_e_keys[1]]
         # count_comb[f_e_keys] / count_e[f_e_keys[1]]
 
-    # =============+ROUND2+=========================
-    # for src_sent_eg, dest_sent_eg in zip(src_sent, dest_sent):
-    for src_sent_eg, dest_sent_eg in zip(dest_sent, src_sent):
-        for f_i in src_sent_eg:
-            Z_2 = 0.0
-            for e_j in dest_sent_eg:
-                # initialize counts on the fl
-                if (f_i, e_j) not in t_k_2:
-                    # print('({}, {}) not in t_k, initializing to uniform!'.format(f_i, e_j))
-                    t_k_2[(f_i, e_j)] = uni_prob_2
-
-                Z_2 += t_k_2[(f_i, e_j)]
-            for e_j in dest_sent_eg:
-                c_2 = t_k_2[(f_i, e_j)] / Z_2
-
-                # initialize counts on the fly
-                if (f_i, e_j) not in count_comb_2:
-                    # print('({}, {}) not in count_comb, initializing to 0!'.format(f_i, e_j))
-                    count_comb_2[(f_i, e_j)] = 0.0
-
-                # initialize counts on the fly
-                if e_j not in count_e_2:
-                    # print('({}) not in count_e, initializing to 0!'.format(e_j))
-                    count_e_2[e_j] = 0.0
-
-                count_comb_2[(f_i, e_j)] += c_2
-                count_e_2[e_j] += c_2
-
-    print('Updating t_k counts...', file=sys.stderr)
-    for f_e_keys in count_comb_2:
-        # f_e_keys[0] = f_i, f_e_keys[1] = e_j
-        lmda=0.01
-        t_k_2[(f_e_keys[0], f_e_keys[1])] = \
-            lmda * (count_comb_2['nOnE', f_e_keys[1]] / count_e_2[f_e_keys[1]]) \
-            + (1-lmda) * count_comb_2[f_e_keys] / count_e_2[f_e_keys[1]]
-            # count_comb[f_e_keys] / count_e[f_e_keys[1]]
-
+    for e_f_keys in count_comb_2:
+        lmda = 0.01
+        t_k_2[(e_f_keys[0], e_f_keys[1])] = \
+            lmda * (count_comb_2['nOnE', e_f_keys[1]] / count_e_2[e_f_keys[1]]) \
+            + (1 - lmda) * count_comb_2[e_f_keys] / count_e_2[e_f_keys[1]]
 # # Make predictions using this trained model..
 
 # In[ ]:
@@ -204,33 +196,46 @@ for _i in range(epochs):
 
 print('Aligning...', file=sys.stderr)
 print('Source | Destination', file=sys.stderr)
-for src_sent_eg, dest_sent_eg in zip(src_sent, dest_sent):
+for iterator, (src_sent_eg, dest_sent_eg) in enumerate(zip(src_sent, dest_sent)):
+    if iterator >= opts.num_sents:
+        break
+    # print(iterator,file=sys.stderr)
+    fr_word2 = ''
+    en_word2 = ''
+    fr_word = ''
+    en_word = ''
+    a_i=0
+    a_j=0
+    alignments = dict()
     for i, f_i in enumerate(src_sent_eg):
-        if f_i == 'nOnE':
-            print(str(i), file=sys.stderr)
-            continue
         bestp = 0
         bestj = 0
-        fr_word = ''
-        en_word = ''
         for j, e_j in enumerate(dest_sent_eg):
             if t_k[(f_i, e_j)] > bestp:
                 bestp = t_k[(f_i, e_j)]
                 bestj = j
                 fr_word = f_i
                 en_word = e_j
+            alignments[fr_word] = en_word
     for k, e_k in enumerate(dest_sent_eg):
         bestp2 = 0
         bestl2 = 0
-        fr_word2 = ''
-        en_word2 = ''
         for l,f_l in enumerate(src_sent_eg):
-            if t_k_2[(e_k, f_l)]:
+            if t_k_2[(e_k, f_l)] > bestp2:
                 bestp2 = t_k_2[(e_k, f_l)]
                 bestl2 = l
                 fr_word2 = f_l
                 en_word2 = e_k
-    if fr_word2 == fr_word & en_word == en_word2:
-        if fr_word != 'nOnE' & en_word != 'nOnE':
-            sys.stdout.write('{}-{} '.format(i, bestj))
+
+        # print(fr_word2, file=sys.stderr)
+        # if fr_word2 in alignments:
+        #     print (alignments[fr_word2], file=sys.stderr)
+        if (fr_word2 in alignments) & (alignments[fr_word2] == en_word2):
+            # print(bestl2,k,file=sys.stderr)
+            if (fr_word2 == 'nOnE') & (en_word2 == 'nOnE'):
+                continue
+                # print (fr_word2, en_word2, file=sys.stderr)
+            else:
+                print (fr_word2,en_word2,file=sys.stderr)
+                sys.stdout.write('{}-{} '.format(bestl2, k))
     sys.stdout.write('\n')

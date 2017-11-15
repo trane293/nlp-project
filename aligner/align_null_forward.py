@@ -3,7 +3,7 @@
 
 # # IBM Model 1 with Expectation Maximization
 
-# ## Author: Shreeasish Kumar and Amirali Sharifian
+# ## Author: Shreeasish Kumar on top of Anmol Sharma's baseline
 
 # **Open the files**
 
@@ -50,7 +50,7 @@ dest_sent = []
 
 for line_des, line_src in zip(des_set, src_set):
     # split each sentence into a list of words for easy processing
-    src_sent.append(line_src.split() + ['nOnE'])
+    src_sent.append(line_src.split())
     # src_sent.append(line_src.split())
     # print(src_sent[0:10])
     dest_sent.append(line_des.split() + ['nOnE'])
@@ -107,93 +107,56 @@ print(des_vocab[0:5], file=sys.stderr)
 
 # In[ ]:
 
-
+# f_vocabulary_size = np.shape(src_vocab)[0]
 k = 0
 t_k = {}
-t_k_2 ={}
 uni_prob = 1.0 / np.shape(src_vocab)[0]
-uni_prob_2 = 1.0 / np.shape(des_vocab)[0]
 epochs = opts.epochs
 print('Starting training for {} epochs..'.format(epochs), file=sys.stderr)
 for _i in range(epochs):
     print('Currently on training epoch {}..'.format(_i+1), file=sys.stderr)
     count_comb = {}
-    count_comb_2 = {}
-    count_e_2 = {}
     count_e = {}
     # iterate over all training examples
-    for src_sent_eg, dest_sent_eg in zip(src_sent, dest_sent):
+
+    for iterator,(src_sent_eg, dest_sent_eg) in enumerate(zip(src_sent, dest_sent)):
+        if iterator >= opts.num_sents:
+            break
+
         for f_i in src_sent_eg:
             Z = 0.0
             for e_j in dest_sent_eg:
-
+                
                  # initialize counts on the fl
                 if (f_i, e_j) not in t_k:
 #                     print('({}, {}) not in t_k, initializing to uniform!'.format(f_i, e_j))
                     t_k[(f_i, e_j)] = uni_prob
-
+                
                 Z += t_k[(f_i, e_j)]
             for e_j in dest_sent_eg:
                 c = t_k[(f_i, e_j)] / Z
-
+                
                 # initialize counts on the fly
                 if (f_i, e_j) not in count_comb:
 #                     print('({}, {}) not in count_comb, initializing to 0!'.format(f_i, e_j))
                     count_comb[(f_i, e_j)] = 0.0
-
+                
                 # initialize counts on the fly
                 if e_j not in count_e:
 #                     print('({}) not in count_e, initializing to 0!'.format(e_j))
                     count_e[e_j] = 0.0
-
+                    
                 count_comb[(f_i, e_j)] += c
                 count_e[e_j] += c
-
-
+                
     print('Updating t_k counts...', file=sys.stderr)
     for f_e_keys in count_comb:
         # f_e_keys[0] = f_i, f_e_keys[1] = e_j
-        lmda = 0.01
-        t_k_2[(f_e_keys[0], f_e_keys[1])] = \
-            lmda * (count_comb['nOnE', f_e_keys[1]] / count_e[f_e_keys[1]]) \
-            + (1 - lmda) * count_comb[f_e_keys] / count_e[f_e_keys[1]]
-        # count_comb[f_e_keys] / count_e[f_e_keys[1]]
-
-    # =============+ROUND2+=========================
-    # for src_sent_eg, dest_sent_eg in zip(src_sent, dest_sent):
-    for src_sent_eg, dest_sent_eg in zip(dest_sent, src_sent):
-        for f_i in src_sent_eg:
-            Z_2 = 0.0
-            for e_j in dest_sent_eg:
-                # initialize counts on the fl
-                if (f_i, e_j) not in t_k_2:
-                    # print('({}, {}) not in t_k, initializing to uniform!'.format(f_i, e_j))
-                    t_k_2[(f_i, e_j)] = uni_prob_2
-
-                Z_2 += t_k_2[(f_i, e_j)]
-            for e_j in dest_sent_eg:
-                c_2 = t_k_2[(f_i, e_j)] / Z_2
-
-                # initialize counts on the fly
-                if (f_i, e_j) not in count_comb_2:
-                    # print('({}, {}) not in count_comb, initializing to 0!'.format(f_i, e_j))
-                    count_comb_2[(f_i, e_j)] = 0.0
-
-                # initialize counts on the fly
-                if e_j not in count_e_2:
-                    # print('({}) not in count_e, initializing to 0!'.format(e_j))
-                    count_e_2[e_j] = 0.0
-
-                count_comb_2[(f_i, e_j)] += c_2
-                count_e_2[e_j] += c_2
-
-    print('Updating t_k counts...', file=sys.stderr)
-    for f_e_keys in count_comb_2:
-        # f_e_keys[0] = f_i, f_e_keys[1] = e_j
         lmda=0.01
-        t_k_2[(f_e_keys[0], f_e_keys[1])] = \
-            lmda * (count_comb_2['nOnE', f_e_keys[1]] / count_e_2[f_e_keys[1]]) \
-            + (1-lmda) * count_comb_2[f_e_keys] / count_e_2[f_e_keys[1]]
+        # delta=
+        t_k[(f_e_keys[0], f_e_keys[1])] = \
+            lmda * (count_comb[f_e_keys[0], 'nOnE'] / count_e['nOnE']) \
+            + (1-lmda) * (count_comb[f_e_keys]) / (count_e[f_e_keys[1]])
             # count_comb[f_e_keys] / count_e[f_e_keys[1]]
 
 # # Make predictions using this trained model..
@@ -203,33 +166,23 @@ for _i in range(epochs):
 
 print('Aligning...', file=sys.stderr)
 print('Source | Destination', file=sys.stderr)
-for src_sent_eg, dest_sent_eg in zip(src_sent, dest_sent):
+for iterator, (src_sent_eg, dest_sent_eg) in enumerate(zip(src_sent, dest_sent)):
+    # print(src_sent_eg, file=sys.stderr)
+    if iterator >= opts.num_sents:
+        break
     for i, f_i in enumerate(src_sent_eg):
-        if f_i == 'nOnE':
-            print(str(i), file=sys.stderr)
-            continue
         bestp = 0
         bestj = 0
-        fr_word = ''
-        en_word = ''
+        eng_word = ''
         for j, e_j in enumerate(dest_sent_eg):
             if t_k[(f_i, e_j)] > bestp:
+                eng_word = e_j
                 bestp = t_k[(f_i, e_j)]
                 bestj = j
-                fr_word = f_i
-                en_word = e_j
-    for k, e_k in enumerate(dest_sent_eg):
-        bestp2 = 0
-        bestl2 = 0
-        fr_word2 = ''
-        en_word2 = ''
-        for l,f_l in enumerate(src_sent_eg):
-            if t_k_2[(e_k, f_l)]:
-                bestp2 = t_k_2[(e_k, f_l)]
-                bestl2 = l
-                fr_word2 = f_l
-                en_word2 = e_k
-    if fr_word2 == fr_word & en_word == en_word2:
-        if fr_word != 'nOnE' & en_word != 'nOnE':
+        if eng_word == 'nOnE':
+            # print('none', file=sys.stderr)
+            continue
+        else:
+            print(i,bestj, file=sys.stderr)
             sys.stdout.write('{}-{} '.format(i, bestj))
     sys.stdout.write('\n')

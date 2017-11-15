@@ -35,6 +35,7 @@ from collections import defaultdict
 
 def perc_train(train_data, tagset, numepochs):
     # initialize feature vector to defaultdict with ints
+    
     feat_vec = defaultdict(int)
     biglength = numepochs*len(train_data)
     step = biglength

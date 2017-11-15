@@ -1,1 +1,10 @@
 data/europarl.a
+source.zip
+.idea/
+bakup/
+output.a
+output_2-way.a
+output_null_forward.a
+output_optimized.a
+upload.a
+

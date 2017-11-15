@@ -13,4 +13,10 @@
 
 ~~~
 
+commit ece8686b64dcd3de16921c5bd6d7d0db164e1518
+Author: Shreeasish Kumar <shreeasish@gmail.com>
+Date:   Tue Nov 14 19:34:12 2017 -0800
+
+    Probability intersection working, final commit -Authors: Shreeasish Kumar and Amirali Sharifian
+
 ~~~

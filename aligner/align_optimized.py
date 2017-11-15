@@ -3,7 +3,7 @@
 
 # # IBM Model 1 with Expectation Maximization
 
-# ## Author: Anmol Sharma
+# ## Author: Shreeasish Kumar, Amirali Sharifian on top of Anmol Sharma's baseline
 
 # **Open the files**
 

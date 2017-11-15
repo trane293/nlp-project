@@ -32,6 +32,7 @@ for (i, (f, e, g, a)) in enumerate(zip(open(f_data), open(e_data), open(a_data),
   size_s += len(sure)
   size_a_and_s += len(alignment & sure)
   size_a_and_p += len(alignment & possible) + len(alignment & sure)
+
   if (i<opts.n):
     sys.stdout.write("  Alignment %i  KEY: ( ) = guessed, * = sure, ? = possible\n" % i)
     sys.stdout.write("  ")

@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-import optparse
-import sys
 import models
-from collections import namedtuple
 import itertools
 
 # 4 seems to be the general idea. Could be different. Need to find out

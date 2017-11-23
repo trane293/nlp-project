@@ -6,8 +6,8 @@ import itertools
 d = distortion_limit = 4
 
 # Start working on a single sentence generalize later
-sentence = "honorables sénateurs , que se est - il passé ici , mardi dernier ?"
-sentence = sentence.split(' ')
+sentence_orig = u"honorables sénateurs , que se est - il passé ici , mardi dernier ?"
+sentence = sentence_orig.split(' ')
 
 # Get a translation for each set of words using tm
 tm = models.TM("../data/tm", 1)
@@ -17,14 +17,23 @@ tm = models.TM("../data/tm", 1)
 # combinations, ii) was highly inefficient since it was searching through the dictionary, which is an O(n)
 # operation. Indexing a dictionary is O(1).
 
-for L in range(0, len(sentence)+1):
-  for subset in itertools.combinations(sentence, L):
-    try:
-        print(tm[subset])
-        print(subset)
-    except KeyError:
-        continue
+# define script P, set of all possible phrases in a sentence
+sc_P = []
 
+for L in range(1, len(sentence)+1):
+    for subset in itertools.combinations(sentence, L):
+        # to ensure we preserve the order of combination, we check if the combination actually appears in the sentence
+        # as is:
+        # print(subset)
+        if u' '.join(subset) in sentence_orig:
+            try:
+                print(tm[subset])
+                print(subset)
+                sc_P.append((subset, tm[subset]))
+            except KeyError:
+                continue
+
+print(sc_P)
 # found_indices = []
 # phrases = []
 # for key, value in translation_model.iteritems():

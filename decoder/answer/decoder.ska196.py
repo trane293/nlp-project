@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import optparse
 import sys
-import models
+# import models
 from collections import namedtuple
 import imp
 models = imp.load_compiled("models","models/models.pyc")
@@ -31,25 +31,37 @@ found_indices = []
 phrases = []
 for key, value in translation_model.iteritems():
     indices = [sentence.index(word) for word in key if word in sentence]
-
-    if len(key) == len(indices):
-        pass
-    else:
+    if len(indices) == 0:
         continue
+    else:
+        print key
+        print sentence
+
+        # pass
+    # else:
+    #     continue
 
     prev_ix = indices[0]
     for ix in indices[1:]:
         if ix - prev_ix != 1:
             break
+        else:
+            print key
+            print sentence
         if ix == indices[-1]:
-            print indices
+            # print indices
+            # print key
+            # print sentence
             phrases.append(value)
             found_indices.append(indices)
-
+        else:
+            print key
+            print sentence
         prev_ix = ix
 
 
 # List of english phrases found for this sentence
-print found_indices
-print 
+# print found_indices
+# print phrases
+
 

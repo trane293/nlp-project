@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import models
-import itertools
+from collections import namedtuple
 
 # 4 seems to be the general idea. Could be different. Need to find out
 d = distortion_limit = 4
@@ -12,12 +12,6 @@ sentence = sentence_orig.split(' ')
 # Get a translation for each set of words using tm
 tm = models.TM("../data/tm", 1)
 
-# We need to find all combinations of the input sentence, and then check if a combination exists in the
-# translation model. Earlier implementation had a search scheme going on, which i) did not check for all
-# combinations, ii) was highly inefficient since it was searching through the dictionary, which is an O(n)
-# operation. Indexing a dictionary is O(1).
-
-# define script P, set of all possible phrases in a sentence
 sc_P = []
 
 for i in range(0, len(sentence)):
@@ -25,36 +19,78 @@ for i in range(0, len(sentence)):
         if i == j:
             subset = (sentence[i],)
         else:
-            subset = tuple(sentence[i:j+1])
+            subset = tuple(sentence[i:j + 1])
         try:
             tm_output = tm[subset]
-            sc_P.append((i, j, tm_output))
+            sc_P.append((i, j, tm_output[0]))
         except KeyError:
             continue
 
-# found_indices = []
-# phrases = []
-# for key, value in translation_model.iteritems():
-#     indices = [sentence.index(word) for word in key if word in sentence]
-#
-#     if len(key) == len(indices):
-#         pass
-#     else:
-#         continue
-#
-#     prev_ix = indices[0]
-#     for ix in indices[1:]:
-#         if ix - prev_ix != 1:
-#             break
-#         if ix == indices[-1]:
-#             print indices
-#             phrases.append(value)
-#             found_indices.append(indices)
-#
-#         prev_ix = ix
-#
-#
-# # List of english phrases found for this sentence
-# print found_indices
-# print
+# define bitstring as a list of zeros
+bitstring = [0] * len(sentence)
 
+# define a numedtuple which will be the state vector q
+State = namedtuple('State', "e1 e2 bitstring r alpha")
+
+# this is a container that will hold all states
+state_holder = {}
+
+# initial state
+q0 = State('<s>', '<s>', bitstring, 0, 0)
+
+# append initial state to state_holder
+state_holder[0] = [q0]
+
+# define bitstring as a list of zeros
+bitstring = [0] * len(sentence)
+
+# define a numedtuple which will be the state vector q
+State = namedtuple('State', "e1 e2 bitstring r alpha")
+
+# this is a container that will hold all states
+state_holder = {}
+
+# initial state
+q0 = State('<s>', '<s>', bitstring, 0, 0)
+
+# append initial state to state_holder
+state_holder[0] = [q0]
+
+def ph(q, d=4):
+    ph_states = []
+    for state in sc_P:
+        flag = True  # we assume it as a valid state
+        s = state[0]
+        t = state[1]
+
+        orig_bitstring = q.bitstring
+
+        '''
+        Step 1: Ensure bit string is not overlapped
+        '''
+        if s == t:
+            # invalid state
+            if orig_bitstring[s] != 0:
+                flag = False
+        else:
+            # individial bits s and t are 0, but we also have to check in between them
+            if orig_bitstring[s] == 0 and orig_bitstring[t] == 0:
+                for _num in range(s, t + 1):
+                    if orig_bitstring[_num] != 0:
+                        flag = False
+            else:
+                flag = False
+
+        '''
+        Step 2: Ensure distortion limit is still obeyed
+        '''
+
+        r = q.r
+
+        if not (abs(r + 1 - s) <= d):
+            flag = False
+
+        if flag == True:
+            ph_states.append(state)
+
+    return ph_states

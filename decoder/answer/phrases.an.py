@@ -1,8 +1,10 @@
+# coding=utf-8
 import models
 import itertools
 from copy import deepcopy
 from collections import namedtuple
 import numpy as np
+
 # 4 seems to be the general idea. Could be different. Need to find out
 d = distortion_limit = 4
 
@@ -28,20 +30,8 @@ for i in range(0, len(sentence)):
         except KeyError:
             continue
 
-# define bitstring as a list of zeros
-bitstring = [0] * len(sentence)
-
 # define a numedtuple which will be the state vector q
 State = namedtuple('State', "e1 e2 bitstring r alpha")
-
-# this is a container that will hold all states
-state_holder = {}
-
-# initial state
-q0 = State('<s>', '<s>', bitstring, 0, 0)
-
-# append initial state to state_holder
-state_holder[0] = [q0]
 
 
 def ph(q, d=4):
@@ -63,7 +53,7 @@ def ph(q, d=4):
         else:
             # individial bits s and t are 0, but we also have to check in between them
             if orig_bitstring[s] == 0 and orig_bitstring[t] == 0:
-                for _num in range(s+1, t):
+                for _num in range(s + 1, t):
                     if orig_bitstring[_num] != 0:
                         flag = False
             else:
@@ -82,6 +72,7 @@ def ph(q, d=4):
             ph_states.append(state)
 
     return ph_states
+
 
 def next(q, p, eta=-1):
     s = p[0]
@@ -132,8 +123,7 @@ def next(q, p, eta=-1):
 #                 print('\t\t\tFinding probability of {}, {}'.format(e2, word))
                 prob += lm.score((e2, ), word)[1]
             except KeyError:
-                prob = -5.0
-                print("\t\t\t\tCould not find either trigram or bigram probability..")
+                prob += lm.score((), word)[1]
     else: # there are multiple words
 #         print('Multiple english words')
         for _num in range(0, len(p[2].english.split(' '))):
@@ -147,8 +137,7 @@ def next(q, p, eta=-1):
 #                     print('\t\t\tFinding probability of {}, {}'.format(e2, word))
                     prob += lm.score((e2, ), word)[1]
                 except KeyError:
-                    prob = -5.0
-                    print("\t\t\t\tCould not find either trigram or bigram probability..")
+                    prob += lm.score((), word)[1]
 
             e1 = deepcopy(e2)
             e2 = deepcopy(word)
@@ -164,8 +153,9 @@ def next(q, p, eta=-1):
 
     new_alpha = q.alpha + g_x + prob + dist_val
 
-    new_state = State(e1=second_last, e2=last_word, bitstring=new_bitstring, r=t, alpha=new_alpha)
+    new_state = State(e1=second_last, e2=last_word, bitstring=new_bitstring, r=p[1], alpha=new_alpha)
     return new_state
+
 
 def eq(q1, q2):
     if q1.e1 != q2.e1:
@@ -179,23 +169,26 @@ def eq(q1, q2):
     else:
         return True
 
+
 def add(Q_main, index, q_new, q, valid_phrase, back_pointer):
     for q_dd in Q_main[index]: # q double dash
         if eq(q_new, q_dd) == True:
+            # print('Found similar q..')
             if q_new.alpha > q_dd.alpha: # score of new thing is greater than older
+                # print('Changing the older q for the newer one..')
                 Q_main[index].remove(q_dd)
                 Q_main[index].append(q_new)
-                back_pointer[q_new.r] = (q.r, valid_phrase)
+                back_pointer.append((q_new, q, valid_phrase))
                 return
             else:
                 return
     Q_main[index].append(q_new)
-    back_pointer[q_new.r] = (q.r, valid_phrase)
+    back_pointer.append((q_new, q, valid_phrase))
     return
 
 
 def beam(Q_main, index, beam_width=5):
-    running_max = 0
+    running_max = -500
 
     # find the highest scoring state in the set
     for q in Q_main[index]:
@@ -205,18 +198,22 @@ def beam(Q_main, index, beam_width=5):
 
     final_beam = running_max - beam_width
 
+    final_list = []
     for q in Q_main[index]:
-        if q.alpha < final_beam:
-            Q_main[index].remove(q)
+        if q.alpha >= final_beam:
+            final_list.append(q)
 
-    return Q_main[index]
+    return final_list
+
+
+bitstring = [0]*len(sentence)
 
 q0 = State('<s>', '<s>', bitstring, 0, 0)
 Q_main = {k: [] for k in range(len(sentence)+1)}
 Q_main[0] = [q0]
-back_pointer = {}
+back_pointer = []
 
-for i in range(0, len(sentence) - 1):
+for i in range(0, len(sentence)-1):
     for q in beam(Q_main, i, beam_width=5):
         for valid_phrase in ph(q):
 #             print('\ncurrent q: {}'.format(q))
@@ -224,3 +221,5 @@ for i in range(0, len(sentence) - 1):
             q_new = next(q, valid_phrase)
             index = len(np.nonzero(q_new.bitstring)[0])
             add(Q_main, index, q_new, q, valid_phrase, back_pointer)
+
+print(Q_main)

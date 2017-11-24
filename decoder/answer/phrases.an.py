@@ -20,35 +20,17 @@ tm = models.TM("../data/tm", 1)
 # define script P, set of all possible phrases in a sentence
 sc_P = []
 
-for L in range(1, len(sentence) + 1):
-    for subset in itertools.combinations(list(enumerate(sentence_orig.split(' '))), L):
-        # to ensure we preserve the order of combination, we check if the combination
-        # actually appears in the sentence
-        indices = [x[0] for x in subset]
-        flag = 0
-        # first, the subset should be in the sentence
-        if u' '.join(tuple([x[1] for x in subset])) in sentence_orig:
-            # then we ensure that the chosen subset is actually adjacent.
-            for t in range(len(indices) - 1):
-                if indices[t + 1] - indices[t] > 1:
-                    flag = 1
-            if flag == 0:
-                try:
-                    #                         print(tm[tuple([x[1] for x in subset])])
-                    #                         print(subset)
-                    sc_P.append((subset, tm[tuple([x[1] for x in subset])]))
-                except KeyError:
-                    continue
-
-sc_P_indices = []
-ind = 0  # index is at zero place
-for inst in range(len(sc_P)):
-    indices = []
-    for source_phrase in sc_P[inst][0]:  # source phrase is at pos 0
-        indices.append(source_phrase[ind])
-    start = min(indices)
-    end = max(indices)
-    sc_P_indices.append((start, end, sc_P[inst][1]))
+for i in range(0, len(sentence)):
+    for j in range(i, len(sentence)):
+        if i == j:
+            subset = (sentence[i],)
+        else:
+            subset = tuple(sentence[i:j+1])
+        try:
+            tm_output = tm[subset]
+            sc_P.append((i, j, tm_output))
+        except KeyError:
+            continue
 
 # found_indices = []
 # phrases = []

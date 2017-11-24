@@ -63,7 +63,7 @@ def ph(q, d=4):
         else:
             # individial bits s and t are 0, but we also have to check in between them
             if orig_bitstring[s] == 0 and orig_bitstring[t] == 0:
-                for _num in range(s, t + 1):
+                for _num in range(s+1, t):
                     if orig_bitstring[_num] != 0:
                         flag = False
             else:
@@ -162,9 +162,9 @@ def next(q, p, eta=-1):
 
     # UPDATE ALPHA VALUE
 
-    new_alpha = q.alpha + prob + dist_val
+    new_alpha = q.alpha + g_x + prob + dist_val
 
-    new_state = State(e1=second_last, e2=last_word, bitstring=new_bitstring, r=p[1], alpha=new_alpha)
+    new_state = State(e1=second_last, e2=last_word, bitstring=new_bitstring, r=t, alpha=new_alpha)
     return new_state
 
 def eq(q1, q2):
@@ -217,7 +217,7 @@ Q_main[0] = [q0]
 back_pointer = {}
 
 for i in range(0, len(sentence) - 1):
-    for q in beam(Q_main, i, beam_width=10):
+    for q in beam(Q_main, i, beam_width=5):
         for valid_phrase in ph(q):
 #             print('\ncurrent q: {}'.format(q))
 #             print('current valid_phrase: {}\n'.format(valid_phrase))

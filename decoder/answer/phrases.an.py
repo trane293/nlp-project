@@ -208,6 +208,7 @@ def beam(Q_main, index, beam_width=5):
 
 bitstring = [0]*len(sentence)
 
+
 q0 = State('<s>', '<s>', bitstring, 0, 0)
 Q_main = {k: [] for k in range(len(sentence)+1)}
 Q_main[0] = [q0]
@@ -215,9 +216,9 @@ back_pointer = []
 
 for i in range(0, len(sentence)-1):
     for q in beam(Q_main, i, beam_width=5):
-        for valid_phrase in ph(q):
-#             print('\ncurrent q: {}'.format(q))
-#             print('current valid_phrase: {}\n'.format(valid_phrase))
+        for valid_phrase in ph(q, d=6):
+            print('\ncurrent q: {}'.format(q))
+            print('current valid_phrase: {}\n'.format(valid_phrase))
             q_new = next(q, valid_phrase)
             index = len(np.nonzero(q_new.bitstring)[0])
             add(Q_main, index, q_new, q, valid_phrase, back_pointer)

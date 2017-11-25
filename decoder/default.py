@@ -14,7 +14,7 @@ optparser.add_option("-s", "--stack-size", dest="s", default=1, type="int", help
 optparser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,  help="Verbose mode (default=off)")
 opts = optparser.parse_args()[0]
 
-tm = models.TM(opts.tm, opts.k)
+tm = models.TM(opts.tm, 10)
 lm = models.LM(opts.lm)
 french = [tuple(line.strip().split()) for line in open(opts.input).readlines()[:opts.num_sents]]
 
@@ -34,8 +34,9 @@ for f in french:
   initial_hypothesis = hypothesis(0.0, lm.begin(), None, None)
   stacks = [{} for _ in f] + [{}]
   stacks[0][lm.begin()] = initial_hypothesis
+  beam_width = 10
   for i, stack in enumerate(stacks[:-1]):
-    for h in sorted(stack.itervalues(),key=lambda h: -h.logprob)[:opts.s]: # prune
+    for h in sorted(stack.itervalues(),key=lambda h: h.logprob-beam_width)[:opts.s]: # prune
       for j in xrange(i+1,len(f)+1):
         if f[i:j] in tm:
           for phrase in tm[f[i:j]]:

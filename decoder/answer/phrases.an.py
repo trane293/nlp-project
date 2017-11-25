@@ -1,40 +1,14 @@
 # coding=utf-8
+from __future__ import print_function
 import models
 import itertools
 from copy import deepcopy
 from collections import namedtuple
 import numpy as np
-
-# 4 seems to be the general idea. Could be different. Need to find out
-d = distortion_limit = 4
-
-# Start working on a single sentence generalize later
-sentence_orig = "honorables sénateurs , que se est - il passé ici , mardi dernier ?"
-sentence = sentence_orig.split(' ')
-
-# Get a translation for each set of words using tm
-tm = models.TM("../data/tm", 1)
-lm = models.LM("../data/lm")
-
-sc_P = []
-
-for i in range(0, len(sentence)):
-    for j in range(i, len(sentence)):
-        if i == j:
-            subset = (sentence[i],)
-        else:
-            subset = tuple(sentence[i:j + 1])
-        try:
-            tm_output = tm[subset]
-            sc_P.append((i, j, tm_output[0]))
-        except KeyError:
-            continue
-
-# define a numedtuple which will be the state vector q
-State = namedtuple('State', "e1 e2 bitstring r alpha")
+import sys
 
 
-def ph(q, d=4):
+def ph(sc_P, q, d=4):
     ph_states = []
     for state in sc_P:
         flag = True  # we assume it as a valid state
@@ -46,17 +20,8 @@ def ph(q, d=4):
         '''
         Step 1: Ensure bit string is not overlapped
         '''
-        if s == t:
-            # invalid state
-            if orig_bitstring[s] != 0:
-                flag = False
-        else:
-            # individial bits s and t are 0, but we also have to check in between them
-            if orig_bitstring[s] == 0 and orig_bitstring[t] == 0:
-                for _num in range(s + 1, t):
-                    if orig_bitstring[_num] != 0:
-                        flag = False
-            else:
+        for _num in range(s, t+1):
+            if orig_bitstring[_num] != 0:
                 flag = False
 
         '''
@@ -95,8 +60,8 @@ def next(q, p, eta=-1):
         # just a safeguard..check whether earlier these values were zeros or not
 
         if q.bitstring[i] == 1:
-            print('MAJOR ERROR!')
-            print('The Ph(q) function has issues if you can read this...')
+            print('MAJOR ERROR!', file=sys.stderr)
+            print('The Ph(q) function has issues if you can read this...', file=sys.stderr)
         new_bitstring[i] = 1
 
     '''
@@ -153,7 +118,7 @@ def next(q, p, eta=-1):
 
     new_alpha = q.alpha + g_x + prob + dist_val
 
-    new_state = State(e1=second_last, e2=last_word, bitstring=new_bitstring, r=p[1], alpha=new_alpha)
+    new_state = State(e1=second_last, e2=last_word, bitstring=new_bitstring, r=t, alpha=new_alpha)
     return new_state
 
 
@@ -188,7 +153,7 @@ def add(Q_main, index, q_new, q, valid_phrase, back_pointer):
 
 
 def beam(Q_main, index, beam_width=5):
-    running_max = -500
+    running_max = -10000
 
     # find the highest scoring state in the set
     for q in Q_main[index]:
@@ -206,21 +171,94 @@ def beam(Q_main, index, beam_width=5):
     return final_list
 
 
-bitstring = [0]*len(sentence)
+def getBestPerformerState(Q_main, ind):
+    running_max = -10000
+    best_state = None
 
+    for state in Q_main[ind]:
+        if state.alpha > running_max:
+            running_max = state.alpha
+            best_state = state
 
-q0 = State('<s>', '<s>', bitstring, 0, 0)
-Q_main = {k: [] for k in range(len(sentence)+1)}
-Q_main[0] = [q0]
-back_pointer = []
+    return best_state
 
-for i in range(0, len(sentence)-1):
-    for q in beam(Q_main, i, beam_width=5):
-        for valid_phrase in ph(q, d=6):
-            print('\ncurrent q: {}'.format(q))
-            print('current valid_phrase: {}\n'.format(valid_phrase))
-            q_new = next(q, valid_phrase)
-            index = len(np.nonzero(q_new.bitstring)[0])
-            add(Q_main, index, q_new, q, valid_phrase, back_pointer)
+def search(back_pointer, value, which_index):
+    for entry in back_pointer:
+        if value == entry[which_index]:
+            return entry[2], entry[1]
+    return False, False
 
-print(Q_main)
+# 4 seems to be the general idea. Could be different. Need to find out
+d = distortion_limit = 4
+
+# Start working on a single sentence generalize later
+inp_file = open('../data/input')
+outfile = open('beam_search_output', 'wb')
+
+# sentence_orig = "honorables sénateurs , que se est - il passé ici , mardi dernier ?"
+# Get a translation for each set of words using tm
+tm = models.TM("../data/tm", 1)
+lm = models.LM("../data/lm")
+
+# define a numedtuple which will be the state vector q
+State = namedtuple('State', "e1 e2 bitstring r alpha")
+sent_num = 0
+
+for sentence_orig in inp_file:
+    print('sentence {}..'.format(sent_num), file=sys.stderr)
+    sentence = sentence_orig.split(' ')[0:-1]
+    sc_P = []
+
+    for i in range(0, len(sentence)):
+        for j in range(i, len(sentence)):
+            if i == j:
+                subset = (sentence[i],)
+            else:
+                subset = tuple(sentence[i:j + 1])
+            try:
+                tm_output = tm[subset]
+                if len(tm_output) > 1:
+                    for k in range(0, len(tm_output)):
+                        sc_P.append((i, j, tm_output[k]))
+                else:
+                    sc_P.append((i, j, tm_output[0]))
+            except KeyError:
+                continue
+
+    bitstring = [0]*len(sentence)
+
+    q0 = State('<s>', '<s>', bitstring, 0, 0)
+    Q_main = {k: [] for k in range(len(sentence)+1)}
+    Q_main[0] = [q0]
+    back_pointer = []
+
+    for i in range(0, len(sentence)-1):
+        sys.stdout.write('.')
+        for q in beam(Q_main, i, beam_width=12):
+            for valid_phrase in ph(sc_P, q, d=4):
+                q_new = next(q, valid_phrase)
+                index = len(np.nonzero(q_new.bitstring)[0])
+                assert index > i
+                add(Q_main, index, q_new, q, valid_phrase, back_pointer)
+
+    print(len(sentence))
+    assert Q_main[len(sentence)] != []
+    end_point = getBestPerformerState(Q_main, len(sentence))
+    assert end_point != None
+
+    ptr = end_point
+    phrase = [1, 1]
+    phrase_list_final = []
+    while (phrase[0] != 0 and phrase[1] != 0):
+        phrase, ptr = search(back_pointer=back_pointer, value=ptr, which_index=0)
+        phrase_list_final.append(phrase)
+
+    phrase_list_final = sorted(phrase_list_final, key=lambda tup: tup[0])
+
+    for phrase in phrase_list_final:
+        sys.stdout.write(phrase[2].english + ' ')
+        outfile.write(phrase[2].english + ' ')
+    sys.stdout.write('\n')
+    outfile.write('\n')
+
+    sent_num += 1

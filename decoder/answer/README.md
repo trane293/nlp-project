@@ -6,14 +6,14 @@
 
 
     ~~~
-    `python2 decoder.py > file.out`
-    `python2 baseline.py > file.out`
+    python2 decoder.py > file.out
+    python2 baseline.py > file.out
     ~~~
 
 ### Testing and Evaluation phase
 
     ~~~
-    `python2 score-decoder < answer/file.out`
+    python2 score-decoder < answer/file.out
     ~~~
 
 ## Main Implementation

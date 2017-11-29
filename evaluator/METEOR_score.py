@@ -115,7 +115,7 @@ def chunk(alignments):
         chunks.append([alignments[i]])
 
         for j in range(i+1, len(alignments)):
-            if alignments[j-1][1] - alignments[j][1] == -1:
+            if alignments[j-1][1] - alignments[j][1] == -1 and alignments[j-1][0] - alignments[j][0] == -1:
                 # append to current chunk
 #                 print('adding unigram alignment {} to previous chunk {}'.format(alignments[j], chunks[-1]))
                 chunks[-1].append(alignments[j])

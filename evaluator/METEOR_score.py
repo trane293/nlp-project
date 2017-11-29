@@ -153,7 +153,13 @@ def main():
             help='input file (default data/hyp1-hyp2-ref)')
     parser.add_argument('-n', '--num_sentences', default=None, type=int,
             help='Number of hypothesis pairs to evaluate')
-    # note that if x == [1, 2, 3], then x[:None] == x[:] == x (copy); no need for sys.maxint
+    parser.add_argument('-a', '--alpha', default=0.9, type=float,
+            help='Alpha parameter for score calculation')
+    parser.add_argument('-b', '--beta', default=3.0, type=float,
+            help='Beta parameter for score calculation')
+    parser.add_argument('-g', '--gamma', default=None, type=float,
+            help='Gamma parameter for score calculation')
+    # note that if x == [1, 2, 3], then x[:None] == x[:] == x   (copy); no need for sys.maxint
     opts = parser.parse_args()
 
     alignments_h1_ref = {}
@@ -165,7 +171,8 @@ def main():
     score = {}
 
     for h1, h2, ref in islice(sentences(), opts.num_sentences):
-        sys.stderr.write(str(t) + ' ')
+        if t % 1000 == 0:
+            sys.stderr.write(str(t) + ' ')
         bitstring_h1 = [0]*len(h1)
         bitstring_ref = [0]*len(ref)
         alignments_h1_ref[t] = []
@@ -176,7 +183,7 @@ def main():
 
         _tm, num_chunks_h1[t] = chunk(alignments_h1_ref[t])
 
-        score_h1 = scoreMETEOR(h1, ref, num_chunks_h1[t], alignments_h1_ref[t], alpha=0.9, beta=3.0, gamma=0.5)
+        score_h1 = scoreMETEOR(h1, ref, num_chunks_h1[t], alignments_h1_ref[t], alpha=opts.alpha, beta=opts.beta, gamma=opts.gamma)
 
         bitstring_h2 = [0]*len(h2)
         bitstring_ref = [0]*len(ref)

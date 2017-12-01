@@ -8,7 +8,7 @@ import numpy as np
 import sys
 import time
 
-class NotFound(Exception):
+class Found(Exception):
     pass
 
 def createQfromHashable(q0, alpha):
@@ -203,12 +203,13 @@ lm = models.LM("../data/lm")
 State = namedtuple('State', "e1 e2 bitstring r alpha")
 sent_num = 0
 
-# runs = [16]
+runs = [37]
 for sentence_orig in inp_file:
+    outfile = open('beam_search_output_tmux', 'a')
     # start = time.time()
-    # if sent_num+1 not in runs:
-    #     sent_num += 1
-    #     continue
+    if sent_num+1 not in runs:
+        sent_num += 1
+        continue
     print('sentence {}'.format(sent_num+1), file=sys.stderr)
     sentence = sentence_orig.split(' ')[0:-1]
     sc_P = []
@@ -229,40 +230,46 @@ for sentence_orig in inp_file:
             except KeyError:
                 continue
     try:
-        for d in [4,6,8]:
-            for beam_value in [14, 18, 24, 30]:
-                print('using beam_value {}'.format(beam_value), file=sys.stderr)
-                print('using d {}'.format(d), file=sys.stderr)
-                bitstring = [0]*len(sentence)
+        d = 4
+        beam_value = 14
+        print('using beam_value {}'.format(beam_value), file=sys.stderr)
+        print('using d {}'.format(d), file=sys.stderr)
+        bitstring = [0]*len(sentence)
 
-                q0 = State('<s>', '<s>', bitstring, 0, 0)
-                Q_main = {k: {} for k in range(len(sentence)+1)}
-                q0_hash, q0_alpha = createHashable(q0)
-                Q_main[0] = {q0_hash:q0.alpha}
-                back_pointer = []
+        q0 = State('<s>', '<s>', bitstring, 0, 0)
+        Q_main = {k: {} for k in range(len(sentence)+1)}
+        q0_hash, q0_alpha = createHashable(q0)
+        Q_main[0] = {q0_hash:q0.alpha}
+        back_pointer = []
 
-                for i in range(0, len(sentence)-1):
-                    beam_output = beamHash(Q_main, i, beam_width=beam_value)
-                    for q_hash, alpha in beam_output.items():
-                        ph_output = ph(sc_P=sc_P, q=createQfromHashable(q_hash, alpha), d=d) # earlier running with 4
-                        for valid_phrase in ph_output:
-                            q_new = next(createQfromHashable(q_hash, alpha), valid_phrase)
-                            index = len(np.nonzero(q_new.bitstring)[0])
-                            addHashable(Q_main, index, q_new, createQfromHashable(q_hash, alpha), valid_phrase, back_pointer)
-                    sys.stderr.write('.')
+        for i in range(0, len(sentence)-1):
+            beam_output = beamHash(Q_main, i, beam_width=beam_value)
+            for q_hash, alpha in beam_output.items():
+                ph_output = ph(sc_P=sc_P, q=createQfromHashable(q_hash, alpha), d=d) # earlier running with 4
+                for valid_phrase in ph_output:
+                    q_new = next(createQfromHashable(q_hash, alpha), valid_phrase)
+                    index = len(np.nonzero(q_new.bitstring)[0])
+                    addHashable(Q_main, index, q_new, createQfromHashable(q_hash, alpha), valid_phrase, back_pointer)
+            sys.stderr.write('.')
 
-                if Q_main[len(sentence)] != {}:
-                    print('worked! moving on..', file=sys.stderr)
-                    raise Exception
+        if Q_main[len(sentence)] != {}:
+            print('worked! moving on..', file=sys.stderr)
+            raise Found
 
         print('[BACKOFF] SUBOPTIMAL TRANSLATION', file=sys.stderr)
 
         if Q_main[len(sentence)-1] != {}:
             print('getting second last..', file=sys.stderr)
-            end_point = getBestPerformerStateHash(Q_main, len(sentence)-1)
+            end_point = getBestPerformerStateHash(Q_main, len(sentence) - 1)
         elif Q_main[len(sentence)-2] != {}:
             print('getting third last..', file=sys.stderr)
             end_point = getBestPerformerStateHash(Q_main, len(sentence) - 2)
+        elif Q_main[len(sentence)-3] != {}:
+            print('getting fourth last..', file=sys.stderr)
+            end_point = getBestPerformerStateHash(Q_main, len(sentence) - 3)
+        else:
+            print('getting fifth last..', file=sys.stderr)
+            end_point = getBestPerformerStateHash(Q_main, len(sentence) - 4)
 
         ptr = end_point
         phrase = [1, 1]
@@ -270,7 +277,10 @@ for sentence_orig in inp_file:
         print('backtracking..', file=sys.stderr)
         while (phrase[0] != 0 and phrase[1] != 0):
             phrase, ptr = search(back_pointer=back_pointer, value=ptr, which_index=0)
-            phrase_list_final.append(phrase)
+            if phrase != False:
+                phrase_list_final.append(phrase)
+            else:
+                break
         print('sorting the backtrace..', file=sys.stderr)
         phrase_list_final = sorted(phrase_list_final, key=lambda tup: tup[0])
 
@@ -280,10 +290,10 @@ for sentence_orig in inp_file:
             outfile.write(phrase[2].english + ' ')
         sys.stdout.write('\n')
         outfile.write('\n')
-
+        outfile.close()
         sent_num += 1
 
-    except Exception:
+    except Found:
         print('getting best performer in the translated list', file=sys.stderr)
         end_point = getBestPerformerStateHash(Q_main, len(sentence))
 
@@ -303,7 +313,7 @@ for sentence_orig in inp_file:
             outfile.write(phrase[2].english + ' ')
         sys.stdout.write('\n')
         outfile.write('\n')
-
+        outfile.close()
         sent_num += 1
     # end = time.time()
     # print('Time taken for this sentence: {}'.format(end-start))

@@ -157,7 +157,7 @@ def main():
             help='Alpha parameter for score calculation')
     parser.add_argument('-b', '--beta', default=3.0, type=float,
             help='Beta parameter for score calculation')
-    parser.add_argument('-g', '--gamma', default=None, type=float,
+    parser.add_argument('-g', '--gamma', default=0.5, type=float,
             help='Gamma parameter for score calculation')
     # note that if x == [1, 2, 3], then x[:None] == x[:] == x   (copy); no need for sys.maxint
     opts = parser.parse_args()

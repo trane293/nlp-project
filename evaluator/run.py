@@ -6,6 +6,7 @@ from bleu.bleu import Bleu
 from bleu.bleu_imp import *
 from rouge.rouge import Rouge
 import glob
+import cPickle as pickle
 
 import argparse
 from itertools import islice
@@ -369,6 +370,11 @@ def main():
         reference  = []
         for line in f:
             reference.append(int(line))
+
+
+    print('dumping result vector..')
+    pickle.dump(result_vector, open('./result_vector.p', 'wb'))
+    print('Done!')
 
     # OUTPUT: [h1_bleu, h2_bleu, h1_rouge, h2_rouge, h1_meteor, h2_meteor]
 

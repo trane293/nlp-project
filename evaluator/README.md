@@ -1,3 +1,13 @@
+Authors:
+- Annmol Sharma
+- Amirali Sharifian
+- Shreeashish Kumar
+
+==========================================
+
+File Description:
+
+
 There are three Python programs here (`-h` for usage):
 
  - `default.py` evaluates pairs of MT output hypotheses by comparing the number of words they match in a reference translation

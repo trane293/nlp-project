@@ -1,4 +1,4 @@
-
+from __future__ import print_function
 import cPickle as pickle
 
 # import custom implementations
@@ -40,6 +40,16 @@ def main():
 
     result_vector = []
     # note: the -n option does not work in the original code
+    print('The code generates four files:')
+    print('BLEU: bleu.out.txt')
+    print('ROGUE: rogue.out.txt')
+    print('METEOR: meteor.out.txt')
+    print('Vector of all concatenated scores - result_vector.p')
+
+    bleu_f = open('bleu.out.txt', 'w')
+    rogue_f = open('rogue.out.txt', 'w')
+    meteor_f = open('meteor.out.txt', 'w')
+
     for h1, h2, ref in islice(sentences(), opts.num_sentences):
         # Getting METEOR results
         if t % 1000 == 0:
@@ -88,6 +98,18 @@ def main():
         # create the resultant vector
 
         result_vector.append([h1_bleu, h2_bleu, h1_rogue, h2_rogue, score_h1, score_h2])
+
+        # print('BLEU result')
+        print(1 if h1_bleu > h2_bleu else
+        (0 if h1_bleu == h2_bleu else -1), file=bleu_f)
+
+
+        # print('ROUGE result')
+        print(1 if h1_rogue > h2_rogue else
+              (0 if h1_rogue== h2_rogue else -1), file=rogue_f)
+
+        print(1 if score_h1 > score_h2 else
+              (0 if score_h1 == score_h2 else -1), file=meteor_f)
 
         t += 1
 
